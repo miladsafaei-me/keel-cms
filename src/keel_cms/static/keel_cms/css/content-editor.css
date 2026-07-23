@@ -1,0 +1,159 @@
+/* Shared content editor (blog + news, add + edit).
+   Three editable views over one body: HTML Preview / HTML source / Markdown.
+   Loaded by post_form.html and news_post_form.html. Light + dark variants
+   mirror the TailAdmin surface (.dark ancestor toggled by Alpine). */
+
+/* Fixed editing height so the toolbar stays in view and long bodies scroll
+   inside the pane instead of growing the page. */
+:root { --ce-pane-h: 500px; }
+
+/* ── EasyMDE / CodeMirror (Markdown tab; its own toolbar is disabled) ────── */
+.markdown-editor-wrap .EasyMDEContainer { border: 1px solid rgb(228 231 236); border-radius: 0.5rem; overflow: hidden; }
+.dark .markdown-editor-wrap .EasyMDEContainer { border-color: rgb(31 41 55); }
+.markdown-editor-wrap .CodeMirror {
+  border: 0; color: rgb(31 41 55); font-size: 15px; line-height: 1.6;
+  height: var(--ce-pane-h); background: #fff;
+}
+.dark .markdown-editor-wrap .CodeMirror { background: rgb(17 24 39); color: rgb(229 231 235); }
+.markdown-editor-wrap .CodeMirror-scroll { min-height: auto; }
+
+/* ── Shared prose look for the HTML Preview tab ─────────────────────────── */
+.ce-preview h1 { font-size: 1.75em; margin: 0.6em 0 0.35em; font-weight: 700; }
+.ce-preview h2 { font-size: 1.4em; margin: 0.6em 0 0.35em; font-weight: 700; }
+.ce-preview h3 { font-size: 1.15em; margin: 0.6em 0 0.35em; font-weight: 700; }
+.ce-preview h4, .ce-preview h5, .ce-preview h6 { font-size: 1.02em; margin: 0.6em 0 0.35em; font-weight: 700; }
+.ce-preview pre { background: rgb(243 244 246); padding: 12px; border-radius: 0.5rem; overflow-x: auto; }
+.dark .ce-preview pre { background: rgb(31 41 55); }
+.ce-preview figure img, .ce-preview img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.ce-preview p { margin: 0 0 0.9em; }
+.ce-preview ul, .ce-preview ol { margin: 0 0 0.9em; padding-left: 1.4em; }
+.ce-preview ul { list-style: disc; }
+.ce-preview ol { list-style: decimal; }
+.ce-preview li { margin: 0.2em 0; }
+.ce-preview a { color: rgb(70 95 255); text-decoration: underline; }
+.dark .ce-preview a { color: rgb(130 150 255); }
+.ce-preview blockquote { border-left: 3px solid rgb(209 213 219); margin: 0 0 0.9em; padding: 0.2em 0 0.2em 1em; color: rgb(75 85 99); }
+.dark .ce-preview blockquote { border-left-color: rgb(55 65 81); color: rgb(156 163 175); }
+.ce-preview table { border-collapse: collapse; width: 100%; margin: 0 0 0.9em; display: block; overflow-x: auto; }
+.ce-preview th, .ce-preview td { border: 1px solid rgb(228 231 236); padding: 6px 10px; text-align: left; }
+.dark .ce-preview th, .dark .ce-preview td { border-color: rgb(31 41 55); }
+.ce-preview figure { margin: 16px 0; }
+.ce-preview figcaption { font-size: 13px; color: rgb(107 114 128); margin-top: 6px; }
+.dark .ce-preview figcaption { color: rgb(156 163 175); }
+.ce-preview .in-content-read {
+  display: flex; align-items: center; gap: 16px; padding: 16px 24px;
+  border: 1px solid #ddd6fe; border-radius: 0.5rem; background: #f5f3ff; margin: 16px 0;
+}
+.ce-preview .in-content-read i { color: #7c3aed; font-size: 20px; flex-shrink: 0; }
+.ce-preview .in-content-read-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; color: #7c3aed;
+  letter-spacing: 0.05em; margin-bottom: 2px;
+}
+
+/* ── Toolbar rows (tabs + editing tools), always above the pane ──────────── */
+.ce-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.ce-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 0.6rem; background: rgb(243 244 246); }
+.dark .ce-tabs { background: rgb(31 41 55); }
+.ce-tab {
+  appearance: none; border: 0; cursor: pointer; border-radius: 0.45rem;
+  padding: 0.4rem 0.85rem; font-size: 0.8125rem; font-weight: 600;
+  color: rgb(75 85 99); background: transparent; transition: background .15s, color .15s;
+}
+.ce-tab:hover { color: rgb(17 24 39); }
+.dark .ce-tab { color: rgb(156 163 175); }
+.dark .ce-tab:hover { color: rgb(243 244 246); }
+.ce-tab.ce-tab--active { background: #fff; color: rgb(70 95 255); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06); }
+.dark .ce-tab.ce-tab--active { background: rgb(17 24 39); color: rgb(130 150 255); }
+.ce-convert-status { font-size: 0.75rem; color: rgb(107 114 128); margin-left: auto; }
+.dark .ce-convert-status { color: rgb(156 163 175); }
+.ce-convert-status[data-state="error"] { color: rgb(223 44 83); }
+.ce-convert-status[data-state="busy"] { color: rgb(70 95 255); }
+
+.ce-tools {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+  padding: 4px; border: 1px solid rgb(228 231 236); border-radius: 0.6rem; background: rgb(249 250 251);
+}
+.dark .ce-tools { border-color: rgb(31 41 55); background: rgb(17 24 39); }
+.ce-tool {
+  appearance: none; border: 0; cursor: pointer; background: transparent;
+  min-width: 30px; height: 30px; padding: 0 8px; border-radius: 0.4rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.8125rem; font-weight: 600; color: rgb(75 85 99); line-height: 1;
+}
+.ce-tool:hover { background: rgb(236 243 255); color: rgb(70 95 255); }
+.dark .ce-tool { color: rgb(156 163 175); }
+.dark .ce-tool:hover { background: rgba(70, 95, 255, .12); color: rgb(130 150 255); }
+.ce-tool--b { font-weight: 800; }
+.ce-tool--i { font-style: italic; font-family: Georgia, serif; }
+.ce-tool-sep { width: 1px; align-self: stretch; margin: 3px 4px; background: rgb(228 231 236); }
+.dark .ce-tool-sep { background: rgb(31 41 55); }
+
+/* ── Panes (fixed height, internal scroll) ──────────────────────────────── */
+.ce-panes { position: relative; }
+.ce-pane[hidden] { display: none; }
+
+.ce-html-source {
+  width: 100%; height: var(--ce-pane-h); border: 1px solid rgb(228 231 236); border-radius: 0.5rem;
+  padding: 14px 16px; background: #fff; color: rgb(31 41 55);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.6; resize: none; outline: none; overflow: auto;
+}
+.ce-html-source:focus { border-color: rgb(70 95 255); box-shadow: 0 0 0 2px rgba(70, 95, 255, .2); }
+.dark .ce-html-source { border-color: rgb(31 41 55); background: rgb(17 24 39); color: rgb(229 231 235); }
+
+/* HTML tab CodeMirror (syntax highlight, line numbers, tag matching) */
+.ce-html-cm .CodeMirror {
+  height: var(--ce-pane-h); border: 1px solid rgb(228 231 236); border-radius: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6;
+}
+.dark .ce-html-cm .CodeMirror { border-color: rgb(31 41 55); background: rgb(17 24 39); color: rgb(229 231 235); }
+.dark .ce-html-cm .CodeMirror-gutters { background: rgb(17 24 39); border-color: rgb(31 41 55); }
+.dark .ce-html-cm .CodeMirror-linenumber { color: rgb(107 114 128); }
+.dark .ce-html-cm .CodeMirror-cursor { border-left-color: rgb(229 231 235); }
+/* Matched-tag pair (Notepad++-style start/end tag highlight at the caret) */
+.CodeMirror-matchingtag, .cm-matchhighlight { background: rgba(70, 95, 255, .20); border-radius: 2px; }
+.dark .CodeMirror-matchingtag, .dark .cm-matchhighlight { background: rgba(130, 150, 255, .28); }
+.CodeMirror-activeline-background { background: rgba(70, 95, 255, .06); }
+.dark .CodeMirror-activeline-background { background: rgba(130, 150, 255, .10); }
+.CodeMirror-matchingbracket { color: rgb(70 95 255); font-weight: 700; }
+
+.ce-preview {
+  height: var(--ce-pane-h); overflow-y: auto;
+  border: 1px solid rgb(228 231 236); border-radius: 0.5rem;
+  padding: 20px 24px; background: #fff; color: rgb(31 41 55);
+  font-size: 15px; line-height: 1.7; outline: none; overflow-wrap: break-word;
+}
+.ce-preview:focus { border-color: rgb(70 95 255); box-shadow: 0 0 0 2px rgba(70, 95, 255, .2); }
+.dark .ce-preview { border-color: rgb(31 41 55); background: rgb(17 24 39); color: rgb(229 231 235); }
+.ce-preview:empty::before { content: attr(data-placeholder); color: rgb(156 163 175); }
+
+/* ── Protected component placeholders (Preview + Markdown widget) ────────── */
+.ce-comp {
+  display: flex; align-items: center; gap: 10px; margin: 12px 0;
+  padding: 10px 12px; border: 1px dashed rgb(129 140 248); border-radius: 0.5rem;
+  background: #eef2ff; color: rgb(55 48 163); font-size: 13px; user-select: none;
+}
+.dark .ce-comp { border-color: rgb(99 102 241); background: rgba(99, 102, 241, .12); color: rgb(199 210 254); }
+.ce-comp--md { display: inline-flex; margin: 0; vertical-align: middle; }
+.ce-comp__icon { flex-shrink: 0; opacity: 0.8; }
+.ce-comp__label { font-weight: 600; }
+.ce-comp__hint { color: rgb(99 102 241); font-weight: 400; }
+.ce-comp__del {
+  margin-left: auto; cursor: pointer; border: 0; background: transparent;
+  color: rgb(99 102 241); font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 0.35rem;
+}
+.ce-comp__del:hover { background: rgb(224 231 255); color: rgb(67 56 202); }
+.dark .ce-comp__del:hover { background: rgba(99, 102, 241, .2); }
+
+/* ── Title input — borderless, large ────────────────────────────────────── */
+.title-input { font-size: 1.875rem; font-weight: 700; line-height: 1.3; padding: 1.5rem 1.5rem; width: 100%; border: 0; outline: none; background: transparent; }
+.title-input::placeholder { color: rgb(156 163 175); font-weight: 600; }
+.dark .title-input { color: rgb(243 244 246); }
+
+/* ── Featured image upload zone ─────────────────────────────────────────── */
+.upload-zone { position: relative; border: 2px dashed rgb(209 213 219); border-radius: 0.75rem; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all .15s; background: rgb(249 250 251); overflow: hidden; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.upload-zone:hover, .upload-zone.dragover { border-color: rgb(70 95 255); background: rgb(236 243 255); }
+.dark .upload-zone { border-color: rgb(55 65 81); background: rgb(31 41 55); }
+.dark .upload-zone:hover, .dark .upload-zone.dragover { border-color: rgb(70 95 255); background: rgba(70, 95, 255, .12); }
+.upload-zone .file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10; }
+.upload-zone .preview-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

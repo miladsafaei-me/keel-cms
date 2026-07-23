@@ -1,0 +1,75 @@
+{% load static %}
+{% comment %}
+Shared three-tab body editor for blog + news add/edit forms. Include inside the
+#post-form with `editor_section` set to "blog" or "news". Renders the HTML
+Preview / HTML / Markdown tabs, one unified editing toolbar that acts on the
+active tab, and the config the shared content-editor.js reads. Requires
+form.content_markdown, form.content_html and form.content_format.
+
+Host-provided URLs (via template context, all optional except convert):
+  ce_convert_url   - required; the keel_cms:content_convert endpoint
+  ce_upload_url    - optional; a host image-upload endpoint for figures / featured
+The blog-only AI-image toolbar buttons from the source project are intentionally
+NOT included here; a host that wants them adds its own toolbar + JS on top.
+{% endcomment %}
+<div class="markdown-editor-wrap">
+  <div class="ce-toolbar">
+    <div class="ce-tabs" role="tablist" aria-label="Content view">
+      <button type="button" class="ce-tab" data-ce-tab="preview" role="tab">HTML Preview</button>
+      <button type="button" class="ce-tab" data-ce-tab="html" role="tab">HTML</button>
+      <button type="button" class="ce-tab" data-ce-tab="markdown" role="tab">Markdown</button>
+    </div>
+    <span id="ce-convert-status" class="ce-convert-status" aria-live="polite"></span>
+  </div>
+
+  <div class="ce-tools" id="ce-tools" role="toolbar" aria-label="Formatting">
+    <button type="button" class="ce-tool ce-tool--b" data-ce-cmd="bold" title="Bold">B</button>
+    <button type="button" class="ce-tool ce-tool--i" data-ce-cmd="italic" title="Italic">I</button>
+    <span class="ce-tool-sep"></span>
+    <button type="button" class="ce-tool" data-ce-cmd="h2" title="Heading 2">H2</button>
+    <button type="button" class="ce-tool" data-ce-cmd="h3" title="Heading 3">H3</button>
+    <button type="button" class="ce-tool" data-ce-cmd="quote" title="Quote">&ldquo;</button>
+    <span class="ce-tool-sep"></span>
+    <button type="button" class="ce-tool" data-ce-cmd="ul" title="Bullet list">&bull;</button>
+    <button type="button" class="ce-tool" data-ce-cmd="ol" title="Numbered list">1.</button>
+    <span class="ce-tool-sep"></span>
+    <button type="button" class="ce-tool" data-ce-cmd="link" title="Insert or edit link"><i class="fa-solid fa-link"></i></button>
+    <button type="button" class="ce-tool" data-ce-cmd="image" title="Upload image (figure)"><i class="fa-solid fa-image"></i></button>
+    <button type="button" class="ce-tool" data-ce-cmd="read" title="Reading resource box"><i class="fa-solid fa-bolt"></i></button>
+  </div>
+
+  <div class="ce-panes">
+    <div class="ce-pane" data-ce-pane="preview" hidden>
+      <div id="ce-preview" class="ce-preview" contenteditable="true" spellcheck="false"
+           data-placeholder="Rendered article preview appears here."></div>
+    </div>
+    <div class="ce-pane" data-ce-pane="html" hidden>
+      {{ form.content_html }}
+      <div id="ce-html-cm" class="ce-html-cm"></div>
+      {% if form.content_html.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.content_html.errors.0 }}</p>{% endif %}
+    </div>
+    <div class="ce-pane" data-ce-pane="markdown" hidden>
+      {{ form.content_markdown }}
+      {% if form.content_markdown.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.content_markdown.errors.0 }}</p>{% endif %}
+    </div>
+  </div>
+
+  {{ form.content_format }}
+
+  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+    Three views of one body &mdash; <strong>HTML Preview</strong>, raw <strong>HTML</strong>, and <strong>Markdown</strong> &mdash; kept in sync when you save.
+    Generated visual components show as protected placeholders in Preview and Markdown (edit their raw markup in the HTML tab); deleting a placeholder removes that component.
+  </p>
+
+  <script id="content-editor-config" type="application/json">
+    {
+      "section": "{{ editor_section|default:'blog' }}",
+      "postId": "{% if post %}{{ post.pk }}{% endif %}",
+      "isPipeline": {% if post.is_pipeline_generated %}true{% else %}false{% endif %},
+      "convertUrl": "{{ ce_convert_url }}",
+      "uploadUrl": "{{ ce_upload_url|default:'' }}",
+      "aiInlineUrl": null,
+      "featuredGenerateUrl": null
+    }
+  </script>
+</div>

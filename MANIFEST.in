@@ -1,0 +1,3 @@
+recursive-include src/keel_cms/templates *
+recursive-include src/keel_cms/static *
+recursive-include src/keel_cms/data *

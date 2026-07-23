@@ -1,0 +1,19 @@
+[
+  {
+    "slug": "example-term",
+    "name": "Example Term",
+    "abbreviation": "ET",
+    "is_term": true,
+    "aka": ["Sample Term"],
+    "what_is": "A short definition of what this term means, written for the reader.",
+    "why_it_matters": "Why the reader should care about this term in practice.",
+    "parent_category": "Example Category",
+    "child_category": "",
+    "trade_impact": ["Medium", "How this concept affects a typical decision."],
+    "related_surfaces": ["/pricing"],
+    "faq": [
+      {"question": "Is this a real term?", "answer": "No — it is a placeholder example."}
+    ],
+    "visuals": []
+  }
+]

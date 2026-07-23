@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "keel-cms"
+version = "0.1.0"
+description = "Keel CMS — reusable blog / news / glossary content engine: shared taxonomy models, the 3-tab body editor, the Markdown/HTML render pipeline, schema.org builders, and the render-time auto-linker / showcase / aside slots — all business coupling neutralized into config hooks."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Milad Safaei" }]
+license = { text = "UNLICENSED" }
+dependencies = [
+    "Django>=4.2",
+    "markdown2>=2.4",
+    "nh3>=0.2",
+    "beautifulsoup4>=4.11",
+    "keel-ui",
+]
+
+[project.optional-dependencies]
+# markdownify powers the HTML -> Markdown direction of the 3-tab editor. The
+# render pipeline degrades to a plain-text fallback when it is absent, so it is
+# optional rather than a hard dependency.
+editor = ["markdownify>=0.11"]
+
+[project.urls]
+Homepage = "https://github.com/miladsafaei-me/keel-cms"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/keel_cms"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/keel_cms/templates" = "keel_cms/templates"
+"src/keel_cms/static" = "keel_cms/static"
+"src/keel_cms/data" = "keel_cms/data"
