@@ -28,9 +28,7 @@ editor = ["markdownify>=0.11"]
 Homepage = "https://github.com/miladsafaei-me/keel-cms"
 
 [tool.hatch.build.targets.wheel]
+# ``packages`` already vendors the whole ``src/keel_cms`` tree — templates/static/
+# data included — so a force-include of those dirs double-adds them and hatchling
+# aborts the wheel build. (Same fix keel-seo/keel-content/keel-web needed.)
 packages = ["src/keel_cms"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/keel_cms/templates" = "keel_cms/templates"
-"src/keel_cms/static" = "keel_cms/static"
-"src/keel_cms/data" = "keel_cms/data"

@@ -1,7 +1,18 @@
 """Hand-written initial migration for keel_cms.
 
-Creates every model with the source project's literal ``db_table`` names so a host
-can adopt keel-cms with a metadata-only state migration instead of a data copy.
+**Adoption-first (state-only).** Like keel-seo's Landing move and keel-content's
+Twitter move, every operation is wrapped in ``SeparateDatabaseAndState`` with empty
+``database_operations``: the ``blog_*`` / ``news_*`` tables are the host's existing
+ones, adopted untouched — Django only records the models in its migration STATE, no
+``CREATE TABLE`` runs. A host that already ran the source project's ``blog`` / ``news``
+migrations keeps its data; those apps then remove these models from *their* state with
+matching state-only ``DeleteModel`` migrations. Because no DDL runs, the automated
+deploy ``migrate`` applies this cleanly with zero risk of a "table already exists"
+failure. (A genuinely fresh project seeds these tables out-of-band.)
+
+The literal ``db_table`` names from the source project are preserved (``blog_post``,
+``blog_tag``, ``news_post``, ...) so index/constraint names auto-derive from the same
+table names and ``makemigrations --check`` stays clean after adoption.
 
 The ``TopicCluster.conversion_landing`` FK targets the swappable
 ``KEEL_CMS_LANDING_MODEL`` (default ``keel_seo.Landing``). Its migration dependency
@@ -31,6 +42,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
         migrations.CreateModel(
             name="Author",
             fields=[
@@ -383,5 +397,7 @@ class Migration(migrations.Migration):
                 ("user", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="news_comments", to=settings.AUTH_USER_MODEL)),
             ],
             options={"db_table": "news_comment", "ordering": ["created_at"]},
+        ),
+            ],
         ),
     ]
