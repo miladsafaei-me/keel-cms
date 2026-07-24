@@ -142,7 +142,6 @@ terms as `Tag(is_term=True)` rows.
 
 ## Status
 
-v0.1.0 — Python core extracted + neutralized; self-validated by `py_compile` +
-field-parity inspection against the source models. Live wiring into a host
-(migration/table adoption + URL names + hook config + template inclusion) is the
-host's WIRE step.
+v0.1.2 — extracted, neutralized, and consumed by SignalBots (its first host): the
+existing `blog_*` / `news_*` tables are adopted via the state-only `0001`, and the
+render pipeline, the 3-tab body editor, and the `ContentPlan` queue are all live.

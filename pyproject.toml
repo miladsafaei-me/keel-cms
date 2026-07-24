@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "keel-cms"
-version = "0.1.0"
+version = "0.1.2"
 description = "Keel CMS — reusable blog / news / glossary content engine: shared taxonomy models, the 3-tab body editor, the Markdown/HTML render pipeline, schema.org builders, and the render-time auto-linker / showcase / aside slots — all business coupling neutralized into config hooks."
 readme = "README.md"
 requires-python = ">=3.10"
