@@ -1,0 +1,16 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}{{ tag.name }}{% endblock %}
+
+{% block main %}
+<h1>{{ tag.name }}</h1>
+{% if posts %}
+<ul>
+  {% for post in posts %}
+  <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No articles tagged “{{ tag.name }}” yet.</p>
+{% endif %}
+{% endblock %}

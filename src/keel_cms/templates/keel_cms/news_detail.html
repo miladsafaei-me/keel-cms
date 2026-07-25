@@ -1,0 +1,16 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}{{ post.meta_title|default:post.title }}{% endblock %}
+
+{% block main %}
+<article>
+  <h1>{{ post.title }}</h1>
+  <p>
+    {% if post.author %}<a href="{% url 'keel_cms:news_author_list' post.author.slug %}">{{ post.author.name }}</a>{% endif %}
+    {% if post.category %} · <a href="{% url 'keel_cms:news_topic_list' post.category.slug %}">{{ post.category.name }}</a>{% endif %}
+    {% if post.published_at %} · <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:'Y-m-d' }}</time>{% endif %}
+  </p>
+  {% if post.key_takeaways %}<aside>{{ post.key_takeaways|safe }}</aside>{% endif %}
+  <div>{{ post.content|safe }}</div>
+</article>
+{% endblock %}

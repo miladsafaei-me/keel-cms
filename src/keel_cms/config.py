@@ -66,6 +66,11 @@ Two related settings live at the top level of ``settings`` rather than inside th
 
     # db_table for the swappable Landing target is owned by that model's package,
     # not here.
+
+    # Set True ONLY when adopting a host's pre-existing blog_*/news_* tables: the
+    # initial migration then records model state without emitting CREATE TABLE.
+    # Default False -> a fresh project's initial migration creates the tables.
+    KEEL_CMS_ADOPT_EXISTING = True
 """
 from django.conf import settings
 from django.utils.module_loading import import_string
@@ -92,6 +97,12 @@ DEFAULT_LANDING_MODEL = "keel_seo.Landing"
 def landing_model_ref() -> str:
     """Return the swappable Landing model reference (``"app_label.ModelName"``)."""
     return getattr(settings, "KEEL_CMS_LANDING_MODEL", DEFAULT_LANDING_MODEL)
+
+
+def adopt_existing() -> bool:
+    """Whether the initial migration adopts pre-existing tables (state-only) rather
+    than creating them. Default False: a fresh project creates the tables."""
+    return bool(getattr(settings, "KEEL_CMS_ADOPT_EXISTING", False))
 
 
 def cms_setting(key):

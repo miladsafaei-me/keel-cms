@@ -1,0 +1,31 @@
+{% extends "keel_cms/base.html" %}
+
+{% block main %}
+<h1>{{ brand_name|default:"Home" }}</h1>
+
+<section>
+  <h2>Latest guides</h2>
+  {% if latest_posts %}
+  <ul>
+    {% for post in latest_posts %}
+    <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No published guides yet.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Latest news</h2>
+  {% if latest_news %}
+  <ul>
+    {% for post in latest_news %}
+    <li><a href="{% url 'keel_cms:news_post_detail' post.slug %}">{{ post.title }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No published news yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

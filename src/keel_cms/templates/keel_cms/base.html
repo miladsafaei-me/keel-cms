@@ -1,0 +1,34 @@
+{% comment %}
+Default, brand-agnostic base for the opt-in keel-cms presentation layer. This is a
+minimal, self-contained HTML skeleton so the reference site renders standalone with
+no host base template required.
+
+A host overrides it by shadowing this exact path (keel_cms/base.html) in its own
+templates dir — e.g. to extend the host's own base:
+
+    {% extends "myhost/base.html" %}
+
+Page templates fill the {% block main %} region; {% block title %} and
+{% block head %} are available for per-page overrides.
+{% endcomment %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title|default:brand_name|default:"Content" }}{% endblock %}</title>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="{% url 'keel_cms:home' %}">{{ brand_name|default:"Home" }}</a>
+      <a href="{% url 'keel_cms:post_list' %}">Blog</a>
+      <a href="{% url 'keel_cms:news_post_list' %}">News</a>
+      <a href="{% url 'keel_cms:trading_glossary' %}">Glossary</a>
+    </nav>
+  </header>
+  <main>
+    {% block main %}{% endblock %}
+  </main>
+</body>
+</html>

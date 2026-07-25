@@ -1,0 +1,58 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}{{ term_heading }}{% endblock %}
+
+{% block main %}
+<article>
+  <p><a href="{% url 'keel_cms:trading_glossary' %}">Trading Glossary</a></p>
+  <h1>{{ term_heading }}</h1>
+  {% if term_category %}<p>Category: {{ term_category }}</p>{% endif %}
+  {% if term.what_is %}<p>{{ term.what_is }}</p>{% endif %}
+  {% if term.why_it_matters %}
+  <section>
+    <h2>Why it matters</h2>
+    <p>{{ term.why_it_matters }}</p>
+  </section>
+  {% endif %}
+
+  {% if term_impact_text %}
+  <section>
+    <h2>Trade impact{% if term_impact_level %} — {{ term_impact_level }}{% endif %}</h2>
+    <p>{{ term_impact_text }}</p>
+  </section>
+  {% endif %}
+
+  {% if term_faqs %}
+  <section>
+    <h2>FAQ</h2>
+    <dl>
+      {% for f in term_faqs %}
+      <dt>{{ f.q }}</dt><dd>{{ f.a }}</dd>
+      {% endfor %}
+    </dl>
+  </section>
+  {% endif %}
+
+  {% if term_related_terms %}
+  <section>
+    <h2>Related terms</h2>
+    <ul>
+      {% for t in term_related_terms %}
+      <li><a href="{% url 'keel_cms:trading_glossary_term' t.slug %}">{{ t.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if term_related_posts %}
+  <section>
+    <h2>Related guides</h2>
+    <ul>
+      {% for post in term_related_posts %}
+      <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}

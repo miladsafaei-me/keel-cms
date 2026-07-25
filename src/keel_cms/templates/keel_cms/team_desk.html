@@ -1,0 +1,20 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}{{ author.name }}{% endblock %}
+
+{% block main %}
+<h1>{{ author.name }}</h1>
+{% if author.role %}<p>{{ author.role }}</p>{% endif %}
+{% if author.bio %}<p>{{ author.bio }}</p>{% endif %}
+
+<h2>Articles by {{ author.name }}</h2>
+{% if posts %}
+<ul>
+  {% for post in posts %}
+  <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No published articles yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,18 +1,22 @@
 """Hand-written initial migration for keel_cms.
 
-**Adoption-first (state-only).** Like keel-seo's Landing move and keel-content's
-Twitter move, every operation is wrapped in ``SeparateDatabaseAndState`` with empty
-``database_operations``: the ``blog_*`` / ``news_*`` tables are the host's existing
-ones, adopted untouched — Django only records the models in its migration STATE, no
-``CREATE TABLE`` runs. A host that already ran the source project's ``blog`` / ``news``
-migrations keeps its data; those apps then remove these models from *their* state with
-matching state-only ``DeleteModel`` migrations. Because no DDL runs, the automated
-deploy ``migrate`` applies this cleanly with zero risk of a "table already exists"
-failure. (A genuinely fresh project seeds these tables out-of-band.)
+**Two modes, selected at load time from ``KEEL_CMS_ADOPT_EXISTING``.**
+
+* Greenfield (default, ``adopt_existing()`` is False): the operations run against
+  the database, so a plain ``migrate`` creates the ``blog_*`` / ``news_*`` tables.
+  This is the common case for a new fork — no ``MIGRATION_MODULES`` hack, no
+  ``--run-syncdb``.
+* Adoption (``KEEL_CMS_ADOPT_EXISTING=True``): every operation is wrapped in
+  ``SeparateDatabaseAndState`` with empty ``database_operations`` — the host's
+  existing tables are adopted untouched, Django only records the models in its
+  migration STATE, and no ``CREATE TABLE`` runs. A host that already ran the source
+  project's ``blog`` / ``news`` migrations keeps its data; those apps then remove
+  these models from *their* state with matching state-only ``DeleteModel``
+  migrations.
 
 The literal ``db_table`` names from the source project are preserved (``blog_post``,
 ``blog_tag``, ``news_post``, ...) so index/constraint names auto-derive from the same
-table names and ``makemigrations --check`` stays clean after adoption.
+table names and ``makemigrations --check`` stays clean in either mode.
 
 The ``TopicCluster.conversion_landing`` FK targets the swappable
 ``KEEL_CMS_LANDING_MODEL`` (default ``keel_seo.Landing``). Its migration dependency
@@ -26,25 +30,12 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
-from keel_cms.config import landing_model_ref
+from keel_cms.config import adopt_existing, landing_model_ref
 
 _LANDING_MODEL = landing_model_ref()
 _LANDING_APP = _LANDING_MODEL.split(".", 1)[0]
 
-
-class Migration(migrations.Migration):
-
-    initial = True
-
-    dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        migrations.swappable_dependency(_LANDING_MODEL),
-    ]
-
-    operations = [
-        migrations.SeparateDatabaseAndState(
-            database_operations=[],
-            state_operations=[
+_OPERATIONS = [
         migrations.CreateModel(
             name="Author",
             fields=[
@@ -398,6 +389,24 @@ class Migration(migrations.Migration):
             ],
             options={"db_table": "news_comment", "ordering": ["created_at"]},
         ),
-            ],
-        ),
+]
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        migrations.swappable_dependency(_LANDING_MODEL),
     ]
+
+    if adopt_existing():
+        operations = [
+            migrations.SeparateDatabaseAndState(
+                database_operations=[],
+                state_operations=_OPERATIONS,
+            ),
+        ]
+    else:
+        operations = _OPERATIONS

@@ -1,0 +1,20 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}Trading Glossary{% endblock %}
+
+{% block main %}
+<h1>Trading Glossary</h1>
+<p>{{ glossary_term_count }} term{{ glossary_term_count|pluralize }}.</p>
+{% for letter, rows in glossary_by_letter %}
+<section>
+  <h2>{{ letter }}</h2>
+  <ul>
+    {% for row in rows %}
+    <li><a href="{{ row.term_url }}">{{ row.glossary_term.name }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% empty %}
+<p>No glossary terms yet.</p>
+{% endfor %}
+{% endblock %}

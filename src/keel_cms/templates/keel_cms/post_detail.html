@@ -1,0 +1,27 @@
+{% extends "keel_cms/base.html" %}
+
+{% block title %}{{ post.meta_title|default:post.title }}{% endblock %}
+
+{% block main %}
+<article>
+  <h1>{{ post.title }}</h1>
+  <p>
+    {% if post.author %}<a href="{% url 'keel_cms:team_desk' post.author.slug %}">{{ post.author.name }}</a>{% endif %}
+    {% if post.category %} · <a href="{% url 'keel_cms:topic_list' post.category.slug %}">{{ post.category.name }}</a>{% endif %}
+    {% if post.published_at %} · <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:'Y-m-d' }}</time>{% endif %}
+  </p>
+  <div>{{ post.content|safe }}</div>
+  {% with terms=post.public_tags %}
+  {% if terms %}
+  <footer>
+    <h2>Related terms</h2>
+    <ul>
+      {% for term in terms %}
+      <li><a href="{% url 'keel_cms:trading_glossary_term' term.slug %}">{{ term.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </footer>
+  {% endif %}
+  {% endwith %}
+</article>
+{% endblock %}
