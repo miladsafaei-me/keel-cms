@@ -1,0 +1,22 @@
+{% comment %}
+Shared pager for the keel-cms list pages. Renders nothing unless the view passed a
+paginated context (``is_paginated`` truthy with a ``page_obj``), so unpaginated
+lists include it harmlessly.
+{% endcomment %}
+{% if is_paginated %}
+<nav class="mt-8 flex items-center justify-center gap-2 text-sm" aria-label="Pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+       class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-100">Previous</a>
+  {% else %}
+    <span class="px-3 py-1.5 border border-gray-200 text-gray-400 rounded">Previous</span>
+  {% endif %}
+  <span class="text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+       class="px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-100">Next</a>
+  {% else %}
+    <span class="px-3 py-1.5 border border-gray-200 text-gray-400 rounded">Next</span>
+  {% endif %}
+</nav>
+{% endif %}

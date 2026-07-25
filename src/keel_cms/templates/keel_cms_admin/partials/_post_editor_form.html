@@ -1,0 +1,158 @@
+{% load keel_icons %}
+{% comment %}
+Shared add/edit form body for blog posts and news articles. Blog-only controls
+(layout, reviewer, source video, AI featured image) are gated on
+``editor_section == 'blog'``. The three-tab editor + its modals + the featured
+upload zone are keel-web partials / element IDs the shared content-editor.js drives.
+{% endcomment %}
+<form id="post-form" method="post" enctype="multipart/form-data"
+      class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+  {% csrf_token %}
+
+  <div class="space-y-6">
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="border-b border-gray-200 dark:border-gray-800">
+        {{ form.title }}
+        {% if form.title.errors %}<p class="px-5 pb-3 text-xs text-error-500">{{ form.title.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="space-y-5 p-5 lg:p-6">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_slug">Permalink / URL slug</label>
+          <div class="flex items-stretch overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900">
+            <span class="flex items-center bg-gray-50 px-3 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">{% if editor_section == 'news' %}/news/{% else %}/blog/{% endif %}</span>
+            {{ form.slug }}
+          </div>
+          {% if form.slug.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.slug.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_key_takeaways_markdown">Key takeaways (Markdown)</label>
+          {{ form.key_takeaways_markdown }}
+          {% if form.key_takeaways_markdown.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.key_takeaways_markdown.errors.0 }}</p>{% endif %}
+          <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Optional. Converted to HTML on save (same pipeline as the body).</p>
+        </div>
+
+        {% include "keel_web_admin/partials/_content_editor.html" %}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Excerpt &amp; SEO</h3>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_excerpt">Summary</label>
+      {{ form.excerpt }}
+      <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Recommended length: 120&ndash;160 characters.</p>
+
+      <div class="mt-5">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_meta_title">Meta title (optional)</label>
+        {{ form.meta_title }}
+      </div>
+      <div class="mt-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_meta_description">Meta description (optional)</label>
+        {{ form.meta_description }}
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Featured image</h3>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" class="file-input" accept="image/*">
+        <img src="{{ form.featured_image_url.value|default:'' }}" alt="Preview"
+             class="preview-img" id="preview-img">
+        <span id="upload-icon" class="text-gray-400 dark:text-gray-500">{% icon "upload" class="h-7 w-7" %}</span>
+        <span id="upload-text" class="mt-2 text-sm font-medium text-gray-600 dark:text-gray-300">Click to upload or drag &amp; drop</span>
+        <span id="upload-hint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">PNG, JPG, WebP, GIF &mdash; max 5 MB, stored as WebP</span>
+      </div>
+      <input type="url" name="featured_image_url" id="id_featured_image_url"
+             placeholder="Or paste image URL"
+             value="{{ form.featured_image_url.value|default:'' }}"
+             class="ta-input mt-3">
+    </div>
+
+    {% if editor_section == 'blog' %}
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-2 text-base font-semibold text-gray-800 dark:text-white/90">Source video</h3>
+      <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">Optional YouTube URL this post was written from.</p>
+      {{ form.youtube_url }}
+      {% if form.youtube_url.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.youtube_url.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-white/90">
+        <span class="text-brand-500">{% icon "sparkles" class="h-5 w-5" %}</span> AI featured image
+      </h3>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="post-form-ai-featured-prompt">Image generation prompt</label>
+      <textarea id="post-form-ai-featured-prompt" rows="3" placeholder="Describe the cover image you want…" class="ta-input"></textarea>
+      <button type="button" id="post-form-ai-featured-generate"
+              class="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600">
+        {% icon "sparkles" class="h-4 w-4" %} Generate
+      </button>
+      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="post-form-ai-featured-status" aria-live="polite"></p>
+    </div>
+    {% endif %}
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Organization</h3>
+      <div class="mb-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Topics</label>
+        {% url 'keel_cms_admin:category_list' as topic_list_url %}
+        {% include "keel_cms_admin/partials/_topics_multiselect.html" with field=form.categories empty_url=topic_list_url empty_kind=editor_section %}
+        {% if form.categories.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.categories.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="tag-input">Tags</label>
+        <input type="text" id="tag-input" placeholder="Type an existing glossary term, then Enter or comma..." class="ta-input">
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Tags are glossary terms only &mdash; names that don't match an existing term are ignored on save.</p>
+        <div id="tags-container" class="mt-2 flex flex-wrap gap-1.5"></div>
+        {{ form.tag_names }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">Publishing</h3>
+      <div class="mb-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_status">Status</label>
+        {{ form.status }}
+      </div>
+
+      {% if editor_section == 'blog' %}
+      <div class="mb-4">
+        <span class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Layout</span>
+        <div class="flex flex-col gap-2">
+          {% for radio in form.layout %}
+          <label class="flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 hover:border-brand-400 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300">
+            {{ radio.tag }}<span>{{ radio.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="mb-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_author">Author</label>
+        {{ form.author }}
+        {% if form.author.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.author.errors.0 }}</p>{% endif %}
+      </div>
+
+      {% if editor_section == 'blog' %}
+      <div class="mb-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_reviewer">Reviewer</label>
+        {{ form.reviewer }}
+        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Optional. Shown publicly as &ldquo;Reviewed by &hellip;&rdquo;.</p>
+      </div>
+      {% endif %}
+
+      <div>
+        <div class="mb-1.5 flex items-center justify-between">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_published_at">Publish date</label>
+          <button type="button" id="btn-now" class="rounded-md border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/5">Now</button>
+        </div>
+        {{ form.published_at }}
+      </div>
+    </div>
+  </div>
+</form>
+
+{% include "keel_web_admin/partials/_editor_modals.html" %}

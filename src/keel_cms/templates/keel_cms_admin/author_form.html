@@ -1,0 +1,122 @@
+{% extends "keel_cms_admin/base.html" %}
+{% load static keel_icons %}
+
+{% block title %}{% if author %}Edit author{% else %}Add new author{% endif %}{% endblock %}
+{% block page_title %}{% if author %}Edit author{% else %}Add new author{% endif %}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'keel_cms_admin:author_list' %}" class="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/5">
+  {% icon "arrow-left" class="h-4 w-4" %} Back
+</a>
+<button type="submit" form="author-form" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+  {% icon "check" class="h-4 w-4" %} Save profile
+</button>
+{% endblock %}
+
+{% block content %}
+<form id="author-form" method="post" class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+  {% csrf_token %}
+
+  <div class="space-y-6">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-5 text-base font-semibold text-gray-800 dark:text-white/90">Personal information</h3>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_name">Full name <span class="text-error-500">*</span></label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_role">Professional role / title</label>
+          {{ form.role }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_email">Email address</label>
+          {{ form.email }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_slug">Profile URL slug</label>
+          {{ form.slug }}
+          {% if form.slug.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.slug.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="mt-4">
+        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_bio">Biography</label>
+        {{ form.bio }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-5 text-base font-semibold text-gray-800 dark:text-white/90">Social profiles</h3>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_twitter_url">Twitter / X</label>
+          {{ form.twitter_url }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_linkedin_url">LinkedIn</label>
+          {{ form.linkedin_url }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_github_url">GitHub</label>
+          {{ form.github_url }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_instagram_url">Instagram</label>
+          {{ form.instagram_url }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_telegram_url">Telegram</label>
+          {{ form.telegram_url }}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_youtube_url">YouTube</label>
+          {{ form.youtube_url }}
+        </div>
+      </div>
+
+      <div class="mt-6 border-t border-dashed border-gray-200 pt-5 dark:border-gray-700">
+        <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">Custom links</label>
+        <div id="custom-socials-container" class="space-y-2"></div>
+        <button type="button" id="btn-add-social" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/5">
+          {% icon "plus" class="h-4 w-4" %} Add another platform
+        </button>
+        {{ form.custom_socials }}
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-5 text-base font-semibold text-gray-800 dark:text-white/90">Profile picture</h3>
+      <div class="flex flex-col items-center gap-4">
+        <div id="avatar-zone" data-upload-url="{{ upload_url }}"
+             class="relative flex h-36 w-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-brand-500 hover:bg-brand-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-brand-500 dark:hover:bg-brand-500/10">
+          <input type="file" id="avatar-input" accept="image/png, image/jpeg, image/gif, image/webp" class="absolute inset-0 z-10 cursor-pointer opacity-0">
+          <img id="avatar-preview" src="{{ form.avatar_url.value|default:'' }}" alt="Avatar preview"
+               class="absolute inset-0 z-0 h-full w-full rounded-full object-cover{% if not form.avatar_url.value %} hidden{% endif %}">
+          <span id="avatar-icon" class="z-0 text-gray-400 dark:text-gray-500">{% icon "user-plus" class="h-7 w-7" %}</span>
+          <span id="avatar-text" class="z-0 mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">Upload avatar</span>
+        </div>
+        <input type="url" name="avatar_url" id="id_avatar_url" value="{{ form.avatar_url.value|default:'' }}" placeholder="Or paste image URL" class="ta-input">
+        <button type="button" id="btn-remove-avatar" class="hidden w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-error-500 hover:bg-error-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-error-500/10">Remove photo</button>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <h3 class="mb-5 text-base font-semibold text-gray-800 dark:text-white/90">Account settings</h3>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_is_active">Author status</label>
+      {{ form.is_active }}
+      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Inactive authors are hidden from the directory, but keep their byline on existing content.</p>
+
+      <label class="mb-1.5 mt-5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_is_reviewer">Eligible as reviewer</label>
+      {{ form.is_reviewer }}
+      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">When enabled, this author appears in the post editor's &ldquo;Reviewer&rdquo; dropdown.</p>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'keel_cms_admin/js/author-form.js' %}"></script>
+{% endblock %}

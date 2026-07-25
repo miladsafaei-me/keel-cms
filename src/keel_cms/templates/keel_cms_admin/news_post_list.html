@@ -1,0 +1,16 @@
+{% extends "keel_cms_admin/base.html" %}
+{% load keel_icons %}
+
+{% block title %}News articles{% endblock %}
+{% block page_title %}News{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'keel_cms_admin:news_post_create' %}" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+  {% icon "plus" class="h-4 w-4" %} Add news article
+</a>
+{% endblock %}
+
+{% block content %}
+{% url 'keel_cms_admin:news_post_create' as create_url %}
+{% include "keel_cms_admin/partials/_content_list.html" with create_url=create_url add_label="Create your first article" edit_url_name="keel_cms_admin:news_post_edit" delete_url_name="keel_cms_admin:news_post_delete" empty_label="No articles yet." %}
+{% endblock %}

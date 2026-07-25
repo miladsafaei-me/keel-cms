@@ -1,0 +1,91 @@
+{% extends "keel_cms_admin/base.html" %}
+{% load keel_icons %}
+
+{% block title %}Authors{% endblock %}
+{% block page_title %}Authors{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'keel_cms_admin:author_create' %}" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+  {% icon "user-plus" class="h-4 w-4" %} Add author
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+  <form method="get" class="border-b border-gray-200 p-4 dark:border-gray-800 md:p-5">
+    <div class="relative max-w-sm">
+      <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">{% icon "search" class="h-4 w-4" %}</span>
+      <input type="text" name="q" placeholder="Search authors..." value="{{ current_q }}" class="ta-input pl-9">
+    </div>
+  </form>
+  <div class="overflow-x-auto">
+    <table class="min-w-full">
+      <thead class="border-b border-gray-200 dark:border-gray-800">
+        <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <th class="px-5 py-3 md:px-6">Author</th>
+          <th class="px-5 py-3">Role</th>
+          <th class="px-5 py-3 text-center">Content</th>
+          <th class="px-5 py-3">Status</th>
+          <th class="px-5 py-3 text-right md:pr-6">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for author in authors %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+          <td class="px-5 py-4 md:px-6">
+            <div class="flex items-center gap-3">
+              {% if author.avatar_url %}
+                <img src="{{ author.avatar_url }}" alt="" class="h-10 w-10 shrink-0 rounded-full border border-gray-200 object-cover dark:border-gray-700">
+              {% else %}
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">{% icon "user-cog" class="h-5 w-5" %}</span>
+              {% endif %}
+              <div class="min-w-0">
+                <a href="{% url 'keel_cms_admin:author_edit' author.pk %}" class="block truncate text-sm font-semibold text-gray-800 hover:text-brand-500 dark:text-white/90">{{ author.name }}</a>
+                {% if author.email %}<span class="block truncate text-xs text-gray-400">{{ author.email }}</span>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">{{ author.role|default:"—" }}</td>
+          <td class="px-5 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
+            <span class="font-semibold text-gray-700 dark:text-gray-300" title="Blog posts">{{ author.post_count }}</span>
+            <span class="text-gray-300 dark:text-gray-600">/</span>
+            <span class="font-semibold text-gray-700 dark:text-gray-300" title="News articles">{{ author.news_count }}</span>
+          </td>
+          <td class="px-5 py-4">
+            {% if author.is_active %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-400">Active</span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">Hidden</span>
+            {% endif %}
+            {% if author.is_reviewer %}<span class="ml-1 inline-flex items-center rounded-full bg-blue-light-50 px-2 py-0.5 text-[10px] font-medium text-blue-light-700 dark:bg-blue-light-500/15 dark:text-blue-light-400">Reviewer</span>{% endif %}
+          </td>
+          <td class="px-5 py-4 md:pr-6">
+            <div class="flex items-center justify-end gap-1">
+              <a href="{% url 'keel_cms_admin:author_edit' author.pk %}" title="Edit" class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200">{% icon "pencil" class="h-4 w-4" %}</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-5 py-12 text-center">
+            <div class="mx-auto flex max-w-md flex-col items-center gap-3">
+              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800">{% icon "users" class="h-6 w-6" %}</span>
+              <p class="text-sm text-gray-500 dark:text-gray-400">No authors yet.</p>
+              <a href="{% url 'keel_cms_admin:author_create' %}" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">{% icon "user-plus" class="h-4 w-4" %} Add your first author</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <div class="flex items-center justify-end gap-1 border-t border-gray-200 p-4 dark:border-gray-800 md:p-5">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}" class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5">{% icon "chevron-left" class="h-4 w-4" %}</a>{% endif %}
+    <span class="flex h-8 items-center px-3 text-xs text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}" class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5">{% icon "chevron-right" class="h-4 w-4" %}</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

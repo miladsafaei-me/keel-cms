@@ -1,0 +1,17 @@
+{% load keel_icons %}
+{% comment %}
+One dashboard KPI card. Inputs: icon, label, value, sub (optional number),
+sub_label, url_name (a keel_cms_admin URL name to link the card).
+{% endcomment %}
+<a href="{% url url_name %}" class="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-brand-300 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/40">
+  <div class="flex items-center justify-between">
+    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
+      {% icon icon class="h-5 w-5" %}
+    </span>
+    {% if sub is not None %}
+    <span class="text-xs text-gray-400">{{ sub }} {{ sub_label }}</span>
+    {% endif %}
+  </div>
+  <p class="mt-4 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ value }}</p>
+  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ label }}</p>
+</a>

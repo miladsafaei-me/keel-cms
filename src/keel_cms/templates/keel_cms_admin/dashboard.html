@@ -1,0 +1,54 @@
+{% extends "keel_cms_admin/base.html" %}
+{% load keel_icons %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+  {% include "keel_cms_admin/_stat_card.html" with icon="file-text" label="Blog posts" value=post_count sub=post_published sub_label="published" url_name="keel_cms_admin:post_list" %}
+  {% include "keel_cms_admin/_stat_card.html" with icon="news" label="News articles" value=news_count sub=news_published sub_label="published" url_name="keel_cms_admin:news_post_list" %}
+  {% include "keel_cms_admin/_stat_card.html" with icon="users" label="Authors" value=author_count sub=None sub_label="" url_name="keel_cms_admin:author_list" %}
+  {% include "keel_cms_admin/_stat_card.html" with icon="folder" label="Topics" value=topic_count sub=tag_count sub_label="tags" url_name="keel_cms_admin:category_list" %}
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-800">
+      <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Recent posts</h3>
+      <a href="{% url 'keel_cms_admin:post_create' %}" class="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600">
+        {% icon "plus" class="h-4 w-4" %} New
+      </a>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for post in recent_posts %}
+      <li class="flex items-center justify-between gap-3 px-5 py-3">
+        <a href="{% url 'keel_cms_admin:post_edit' post.pk %}" class="truncate text-sm font-medium text-gray-800 hover:text-brand-500 dark:text-white/90">{{ post.title }}</a>
+        <span class="shrink-0 text-xs text-gray-400">{{ post.created_at|date:"M j, Y" }}</span>
+      </li>
+      {% empty %}
+      <li class="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No posts yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-800">
+      <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">Recent news</h3>
+      <a href="{% url 'keel_cms_admin:news_post_create' %}" class="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600">
+        {% icon "plus" class="h-4 w-4" %} New
+      </a>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for post in recent_news %}
+      <li class="flex items-center justify-between gap-3 px-5 py-3">
+        <a href="{% url 'keel_cms_admin:news_post_edit' post.pk %}" class="truncate text-sm font-medium text-gray-800 hover:text-brand-500 dark:text-white/90">{{ post.title }}</a>
+        <span class="shrink-0 text-xs text-gray-400">{{ post.created_at|date:"M j, Y" }}</span>
+      </li>
+      {% empty %}
+      <li class="px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No articles yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

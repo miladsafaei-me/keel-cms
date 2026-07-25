@@ -1,0 +1,11 @@
+{% extends "keel_web_admin/base_admin.html" %}
+{% load static %}
+{% comment %}
+Admin OS base for keel-cms. Extends keel-web's admin shell and adds the admin CSS
+bundle the shell base does not load itself (admin-os-style + cms-overrides). Every
+Admin OS page extends this template, so the CSS loads exactly once.
+{% endcomment %}
+{% block head_extra %}
+<link rel="stylesheet" href="{% static 'keel_web_admin/css/admin-os-style.css' %}">
+<link rel="stylesheet" href="{% static 'keel_web_admin/css/cms-overrides.css' %}">
+{% endblock %}

@@ -1,0 +1,96 @@
+{% load static keel_icons %}
+{% comment %}
+CMS-only shadow of keel-web's admin sidebar. Overrides the keel-web copy so a
+keel-cms host does not need keel-web's client app: the logo links to
+keel_cms_admin:dashboard and renders the brand name as text (no keel_web_client
+logo asset), and there are no client:* reverses. The nav loop is unchanged and
+reads the ``admin_nav`` context var built by keel_cms.admin_os.nav.
+{% endcomment %}
+<div class="dark contents">
+<aside
+  :class="sidebarToggle ? 'translate-x-0 lg:w-[90px]' : '-translate-x-full'"
+  class="ta-sidebar fixed left-0 top-0 z-50 flex h-screen w-[290px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-5 transition-all duration-300 lg:static lg:translate-x-0 dark:border-gray-800 dark:bg-black">
+
+  <div :class="sidebarToggle ? 'justify-center' : 'justify-start'"
+       class="flex shrink-0 items-center gap-2 pt-8 pb-7">
+    <a href="{% url 'keel_cms_admin:dashboard' %}" aria-label="Dashboard" class="inline-flex shrink-0 items-center gap-2">
+      <span class="logo inline-flex shrink-0 flex-nowrap items-center gap-2 whitespace-nowrap" :class="sidebarToggle ? 'lg:hidden' : ''">
+        <span class="text-brand-500">{% icon "dashboard" class="h-6 w-6" %}</span>
+        <span class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ brand_name|default:"Keel CMS" }}</span>
+      </span>
+      <span class="logo-icon hidden shrink-0 text-brand-500"
+            :class="sidebarToggle ? 'lg:block' : ''">
+        {% icon "dashboard" class="h-6 w-6" %}
+      </span>
+    </a>
+  </div>
+
+  <div class="no-scrollbar flex flex-col overflow-y-auto duration-300 ease-linear">
+    <nav>
+      {% for section in admin_nav %}
+      <div>
+        <h3 class="mb-4 flex text-xs leading-5 uppercase text-gray-400">
+          <span class="menu-group-title" :class="sidebarToggle ? 'lg:hidden' : ''">
+            {{ section.label }}
+          </span>
+          <span :class="sidebarToggle ? 'lg:block hidden' : 'hidden'"
+                class="mx-auto text-gray-400">
+            {% icon "dots" class="h-4 w-4" %}
+          </span>
+        </h3>
+
+        <ul class="mb-6 flex flex-col gap-1">
+          {% for item in section.items %}
+            {% if item.accordion %}
+              <li x-data="{ open: {{ item.open|yesno:'true,false' }} }">
+                <button type="button"
+                        @click="open = !open"
+                        class="menu-item group w-full {% if item.any_active %}menu-item-active{% else %}menu-item-inactive{% endif %}">
+                  <span class="{% if item.any_active %}text-brand-500 dark:text-brand-400{% else %}text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300{% endif %}">
+                    {% icon item.icon class="h-5 w-5" %}
+                  </span>
+                  <span class="menu-item-text" :class="sidebarToggle ? 'lg:hidden' : ''">
+                    {{ item.label }}
+                  </span>
+                  <span class="menu-item-arrow transition-transform duration-300 ease-out {% if item.any_active %}text-brand-500 dark:text-brand-400{% else %}text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300{% endif %}"
+                        :class="{ 'rotate-180': open, 'lg:hidden': sidebarToggle }">
+                    {% icon "chevron-down" class="h-4 w-4" %}
+                  </span>
+                </button>
+                <div class="grid transition-[grid-template-rows] duration-300 ease-out"
+                     :class="{ 'grid-rows-[1fr] mt-2': open, 'grid-rows-[0fr]': !open, 'lg:hidden': sidebarToggle }">
+                  <div class="overflow-hidden">
+                    <ul class="flex flex-col gap-1 pl-9">
+                      {% for child in item.children %}
+                        <li>
+                          <a href="{{ child.url }}"
+                             class="menu-dropdown-item {% if child.active %}menu-dropdown-item-active{% else %}menu-dropdown-item-inactive{% endif %}">
+                            {{ child.label }}
+                          </a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              </li>
+            {% else %}
+              <li>
+                <a href="{{ item.url }}"
+                   class="menu-item group {% if item.active %}menu-item-active{% else %}menu-item-inactive{% endif %}">
+                  <span class="{% if item.active %}text-brand-500 dark:text-brand-400{% else %}text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300{% endif %}">
+                    {% icon item.icon class="h-5 w-5" %}
+                  </span>
+                  <span class="menu-item-text" :class="sidebarToggle ? 'lg:hidden' : ''">
+                    {{ item.label }}
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </nav>
+  </div>
+</aside>
+</div>

@@ -2,15 +2,35 @@
 
 {% block title %}{{ tag.name }}{% endblock %}
 
-{% block main %}
-<h1>{{ tag.name }}</h1>
-{% if posts %}
-<ul>
-  {% for post in posts %}
-  <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
-  {% endfor %}
-</ul>
-{% else %}
-<p>No articles tagged “{{ tag.name }}” yet.</p>
-{% endif %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <header class="mb-8">
+    <span class="kc-eyebrow text-xs">Tag</span>
+    <h1 class="mt-2 text-3xl font-semibold text-gray-900">{{ tag.name }}</h1>
+  </header>
+
+  {% if posts %}
+    <div class="grid gap-6 sm:grid-cols-2">
+      {% for post in posts %}
+        <article class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition">
+          {% if post.featured_image_url %}
+            <img src="{{ post.featured_image_url }}" alt="{{ post.title }}" class="w-full h-40 object-cover">
+          {% endif %}
+          <div class="p-4">
+            <h2 class="text-lg font-semibold">
+              <a href="{% url 'keel_cms:post_detail' post.slug %}" class="kc-title-link text-gray-900">{{ post.title }}</a>
+            </h2>
+            {% if post.excerpt %}<p class="mt-2 text-sm text-gray-600">{{ post.excerpt|truncatewords:20 }}</p>{% endif %}
+            <div class="mt-3 text-xs text-gray-500 flex items-center justify-between">
+              {% if post.author %}<span>{{ post.author.name }}</span>{% endif %}
+              {% if post.published_at %}<time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>{% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-600">No articles tagged &ldquo;{{ tag.name }}&rdquo; yet.</p>
+  {% endif %}
+</section>
 {% endblock %}

@@ -1,0 +1,100 @@
+{% extends "keel_cms_admin/base.html" %}
+{% load static keel_icons %}
+
+{% block title %}Tags{% endblock %}
+{% block page_title %}Tags{% endblock %}
+
+{% block content %}
+<p class="-mt-4 mb-6 text-sm text-gray-500 dark:text-gray-400">Shared labels for blog and news. Public tag/term pages live under <code class="rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">/tag/&lt;slug&gt;</code>.</p>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+  <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6 lg:sticky lg:top-6 lg:self-start">
+    <div class="mb-5 flex items-center gap-2">
+      <span class="text-gray-500 dark:text-gray-400">{% if editing_tag %}{% icon "pencil" class="h-4 w-4" %}{% else %}{% icon "tag" class="h-4 w-4" %}{% endif %}</span>
+      <h3 class="text-base font-semibold text-gray-800 dark:text-white/90">{% if editing_tag %}Edit tag{% else %}Add tag{% endif %}</h3>
+    </div>
+
+    <form id="taxonomy-form" method="post"
+          action="{% if editing_tag %}{% url 'keel_cms_admin:tag_edit' editing_tag.pk %}{% else %}{% url 'keel_cms_admin:tag_list' %}{% endif %}">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="mb-4 rounded-lg border border-error-500/30 bg-error-50 px-4 py-3 text-sm text-error-700 dark:bg-error-500/15 dark:text-error-400">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_name">Name <span class="text-error-500">*</span></label>
+          {{ form.name }}
+          {% if form.name.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.name.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300" for="id_slug">Slug</label>
+          {{ form.slug }}
+          {% if form.slug.errors %}<p class="mt-1.5 text-xs text-error-500">{{ form.slug.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center gap-3 border-t border-gray-200 pt-5 dark:border-gray-800">
+        <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+          {% if editing_tag %}{% icon "check" class="h-4 w-4" %} Save{% else %}{% icon "plus" class="h-4 w-4" %} Add tag{% endif %}
+        </button>
+        {% if editing_tag %}
+        <a href="{% url 'keel_cms_admin:tag_list' %}" class="rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/5">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="border-b border-gray-200 p-4 dark:border-gray-800 md:p-5">
+      <div class="relative max-w-sm">
+        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">{% icon "search" class="h-4 w-4" %}</span>
+        <input type="text" id="taxonomy-search" placeholder="Search tags..." class="ta-input pl-9">
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="border-b border-gray-200 dark:border-gray-800">
+          <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-5 py-3 md:px-6">Tag</th>
+            <th class="px-5 py-3">Slug</th>
+            <th class="px-5 py-3 text-center">Usage</th>
+            <th class="px-5 py-3 text-right md:pr-6">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="taxonomy-tbody" class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for t in tags %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] {% if editing_tag and editing_tag.id == t.id %}bg-brand-50/40 dark:bg-brand-500/10{% endif %}"
+              data-name="{{ t.name|lower }}" data-slug="{{ t.slug|lower }}">
+            <td class="px-5 py-4 md:px-6"><span class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t.name }}</span></td>
+            <td class="px-5 py-4"><code class="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400">{{ t.slug }}</code></td>
+            <td class="px-5 py-4 text-center">
+              <span class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <span class="font-semibold text-gray-700 dark:text-gray-300" title="Blog posts">{{ t.blog_post_count }}</span>
+                <span class="text-gray-300 dark:text-gray-600">/</span>
+                <span class="font-semibold text-gray-700 dark:text-gray-300" title="News articles">{{ t.news_post_count }}</span>
+              </span>
+            </td>
+            <td class="px-5 py-4 md:pr-6">
+              <div class="flex items-center justify-end gap-1">
+                <a href="{% url 'keel_cms_admin:tag_edit' t.pk %}" title="Edit" class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200">{% icon "pencil" class="h-4 w-4" %}</a>
+                <form method="post" action="{% url 'keel_cms_admin:tag_delete' t.pk %}" class="inline" @submit="if (!confirm('Delete this tag? It will be removed from content.')) $event.preventDefault()">
+                  {% csrf_token %}
+                  <button type="submit" title="Delete" class="flex h-8 w-8 items-center justify-center rounded-lg text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10">{% icon "trash" class="h-4 w-4" %}</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-5 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No tags yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'keel_cms_admin/js/taxonomy-list.js' %}"></script>
+{% endblock %}

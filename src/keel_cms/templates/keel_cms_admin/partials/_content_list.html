@@ -1,0 +1,124 @@
+{% load keel_icons %}
+{% comment %}
+Shared list body for blog posts and news articles. Context:
+  posts, categories, current_q, current_category, current_status
+  create_url, add_label, edit_url_name, delete_url_name, empty_label
+{% endcomment %}
+<div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+  <form method="get" id="filter-form" class="border-b border-gray-200 p-4 dark:border-gray-800 md:p-5">
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="relative max-w-sm flex-1">
+        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">{% icon "search" class="h-4 w-4" %}</span>
+        <input type="text" name="q" placeholder="Search by title..." value="{{ current_q }}" class="ta-input pl-9">
+      </div>
+      <select name="category" class="ta-select w-44" @change="$el.form.requestSubmit ? $el.form.requestSubmit() : $el.form.submit()">
+        <option value="">All topics</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if current_category and current_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" class="ta-select w-40" @change="$el.form.requestSubmit ? $el.form.requestSubmit() : $el.form.submit()">
+        <option value="">All statuses</option>
+        <option value="published" {% if current_status == 'published' %}selected{% endif %}>Published</option>
+        <option value="draft" {% if current_status == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+      <button type="submit" class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/5">Apply</button>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full">
+      <thead class="border-b border-gray-200 dark:border-gray-800">
+        <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <th class="px-5 py-3 md:px-6">Title</th>
+          <th class="px-5 py-3">Topic</th>
+          <th class="px-5 py-3">Date</th>
+          <th class="px-5 py-3">Status</th>
+          <th class="px-5 py-3 text-right md:pr-6">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+        {% for post in posts %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+          <td class="px-5 py-4 md:px-6">
+            <div class="flex items-center gap-3">
+              {% if post.featured_image_url %}
+                <img src="{{ post.featured_image_url }}" alt="" class="h-12 w-12 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-gray-700">
+              {% else %}
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-400 dark:border-gray-700 dark:bg-gray-800">
+                  {% icon "file-text" class="h-5 w-5" %}
+                </div>
+              {% endif %}
+              <a href="{% url edit_url_name post.pk %}" class="block max-w-md truncate text-sm font-semibold text-gray-800 hover:text-brand-500 dark:text-white/90">{{ post.title }}</a>
+            </div>
+          </td>
+          <td class="px-5 py-4">
+            {% if post.category %}
+              <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">{{ post.category.name }}</span>
+            {% else %}
+              <span class="text-sm text-gray-400">&mdash;</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4">
+            {% if post.published_at %}
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ post.published_at|date:"M j, Y" }}</div>
+            {% else %}
+              <div class="text-xs text-gray-400">Saved {{ post.updated_at|timesince }} ago</div>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4">
+            {% if post.status == 'published' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-400"><span class="h-1.5 w-1.5 rounded-full bg-success-500"></span> Published</span>
+            {% elif post.status == 'archived' %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-blue-light-50 px-2.5 py-0.5 text-xs font-medium text-blue-light-700 dark:bg-blue-light-500/15 dark:text-blue-light-400"><span class="h-1.5 w-1.5 rounded-full bg-blue-light-500"></span> Archived</span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"><span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span> Draft</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4 md:pr-6">
+            <div class="flex items-center justify-end gap-1">
+              <a href="{% url edit_url_name post.pk %}" title="Edit" class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200">{% icon "pencil" class="h-4 w-4" %}</a>
+              <form method="post" action="{% url delete_url_name post.pk %}" class="inline" @submit="if (!confirm('Delete this item?')) $event.preventDefault()">
+                {% csrf_token %}
+                <button type="submit" title="Delete" class="flex h-8 w-8 items-center justify-center rounded-lg text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10">{% icon "trash" class="h-4 w-4" %}</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-5 py-12 text-center">
+            <div class="mx-auto flex max-w-md flex-col items-center gap-3">
+              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800">{% icon "file-text" class="h-6 w-6" %}</span>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ empty_label }}</p>
+              <a href="{{ create_url }}" class="inline-flex items-center gap-2 rounded-full bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">{% icon "plus" class="h-4 w-4" %} {{ add_label }}</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 p-4 text-sm dark:border-gray-800 md:p-5">
+    <div class="text-gray-500 dark:text-gray-400">
+      Showing <strong class="text-gray-800 dark:text-white/90">{{ page_obj.start_index }}</strong>
+      to <strong class="text-gray-800 dark:text-white/90">{{ page_obj.end_index }}</strong>
+      of <strong class="text-gray-800 dark:text-white/90">{{ page_obj.paginator.count }}</strong>
+    </div>
+    <nav class="flex flex-wrap items-center gap-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}"
+           class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5">{% icon "chevron-left" class="h-4 w-4" %}</a>
+      {% endif %}
+      <span class="flex h-8 items-center px-3 text-xs text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}"
+           class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5">{% icon "chevron-right" class="h-4 w-4" %}</a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+</div>

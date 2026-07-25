@@ -1,31 +1,79 @@
 {% extends "keel_cms/base.html" %}
 
-{% block main %}
-<h1>{{ brand_name|default:"Home" }}</h1>
+{% block title %}{{ brand_name|default:"Content" }}{% endblock %}
 
-<section>
-  <h2>Latest guides</h2>
-  {% if latest_posts %}
-  <ul>
+{% block content %}
+<section class="border-b border-gray-200 bg-white">
+  <div class="max-w-5xl mx-auto px-4 py-16 sm:py-20">
+    <span class="kc-eyebrow inline-block text-xs">{{ brand_name|default:"Content" }}</span>
+    <h1 class="mt-3 text-4xl sm:text-5xl font-semibold text-gray-900 leading-tight">
+      Guides, news, and a working glossary.
+    </h1>
+    <p class="mt-5 text-lg text-gray-600 max-w-2xl">
+      In-depth articles, the latest updates, and a plain-language reference — all in one place.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="{% url 'keel_cms:post_list' %}"
+         class="kc-btn-primary inline-flex items-center px-5 py-2.5 font-medium transition">
+        Read the blog
+      </a>
+      <a href="{% url 'keel_cms:trading_glossary' %}"
+         class="inline-flex items-center px-5 py-2.5 rounded border border-gray-300 text-gray-800 font-medium hover:border-gray-400 hover:bg-gray-50 transition">
+        Browse the glossary
+      </a>
+    </div>
+  </div>
+</section>
+
+{% if latest_posts %}
+<section class="max-w-5xl mx-auto px-4 py-12">
+  <div class="flex items-end justify-between mb-6">
+    <h2 class="text-2xl font-semibold text-gray-900">Latest guides</h2>
+    <a href="{% url 'keel_cms:post_list' %}" class="kc-link-brand text-sm">View all &rarr;</a>
+  </div>
+  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
     {% for post in latest_posts %}
-    <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
+      <article class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition">
+        {% if post.featured_image_url %}
+          <img src="{{ post.featured_image_url }}" alt="{{ post.title }}" class="w-full h-40 object-cover">
+        {% endif %}
+        <div class="p-4">
+          <h3 class="text-lg font-semibold">
+            <a href="{% url 'keel_cms:post_detail' post.slug %}" class="kc-title-link text-gray-900">{{ post.title }}</a>
+          </h3>
+          {% if post.excerpt %}<p class="mt-2 text-sm text-gray-600">{{ post.excerpt|truncatewords:18 }}</p>{% endif %}
+          <div class="mt-3 text-xs text-gray-500 flex items-center justify-between">
+            {% if post.author %}<span>{{ post.author.name }}</span>{% endif %}
+            {% if post.published_at %}<time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>{% endif %}
+          </div>
+        </div>
+      </article>
     {% endfor %}
-  </ul>
-  {% else %}
-  <p>No published guides yet.</p>
-  {% endif %}
+  </div>
 </section>
+{% endif %}
 
-<section>
-  <h2>Latest news</h2>
-  {% if latest_news %}
-  <ul>
+{% if latest_news %}
+<section class="max-w-5xl mx-auto px-4 py-8 pb-16">
+  <div class="flex items-end justify-between mb-6">
+    <h2 class="text-2xl font-semibold text-gray-900">Latest news</h2>
+    <a href="{% url 'keel_cms:news_post_list' %}" class="kc-link-brand text-sm">View all &rarr;</a>
+  </div>
+  <ul class="divide-y divide-gray-200 bg-white rounded-lg border border-gray-200">
     {% for post in latest_news %}
-    <li><a href="{% url 'keel_cms:news_post_detail' post.slug %}">{{ post.title }}</a></li>
+      <li class="p-4 hover:bg-gray-50">
+        <a href="{% url 'keel_cms:news_post_detail' post.slug %}" class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="font-medium text-gray-900">{{ post.title }}</h3>
+            {% if post.excerpt %}<p class="mt-1 text-sm text-gray-600">{{ post.excerpt|truncatewords:20 }}</p>{% endif %}
+          </div>
+          {% if post.published_at %}
+            <time class="text-xs text-gray-500 shrink-0" datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"M j, Y" }}</time>
+          {% endif %}
+        </a>
+      </li>
     {% endfor %}
   </ul>
-  {% else %}
-  <p>No published news yet.</p>
-  {% endif %}
 </section>
+{% endif %}
 {% endblock %}

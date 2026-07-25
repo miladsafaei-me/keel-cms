@@ -1,27 +1,50 @@
 {% extends "keel_cms/base.html" %}
 
 {% block title %}{{ post.meta_title|default:post.title }}{% endblock %}
+{% block meta_description %}{{ post.meta_description|default:post.excerpt|truncatewords:25 }}{% endblock %}
 
-{% block main %}
-<article>
-  <h1>{{ post.title }}</h1>
-  <p>
-    {% if post.author %}<a href="{% url 'keel_cms:team_desk' post.author.slug %}">{{ post.author.name }}</a>{% endif %}
-    {% if post.category %} · <a href="{% url 'keel_cms:topic_list' post.category.slug %}">{{ post.category.name }}</a>{% endif %}
-    {% if post.published_at %} · <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:'Y-m-d' }}</time>{% endif %}
-  </p>
-  <div>{{ post.content|safe }}</div>
-  {% with terms=post.public_tags %}
-  {% if terms %}
-  <footer>
-    <h2>Related terms</h2>
-    <ul>
-      {% for term in terms %}
-      <li><a href="{% url 'keel_cms:trading_glossary_term' term.slug %}">{{ term.name }}</a></li>
-      {% endfor %}
-    </ul>
-  </footer>
+{% block content %}
+<article class="max-w-3xl mx-auto px-4 py-10">
+  <header class="mb-8">
+    <h1 class="text-4xl font-semibold text-gray-900 leading-tight">{{ post.title }}</h1>
+    <div class="mt-3 text-sm text-gray-600 flex flex-wrap items-center gap-3">
+      {% if post.author %}<span>{{ post.author.name }}</span>{% endif %}
+      {% if post.published_at %}
+        <span>&middot;</span>
+        <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"F j, Y" }}</time>
+      {% endif %}
+      <span>&middot;</span>
+      <span>{{ post.get_read_time_minutes }} min read</span>
+    </div>
+    {% if post.featured_image_url %}
+      <img src="{{ post.featured_image_url }}" alt="{{ post.title }}" class="mt-6 w-full rounded-lg">
+    {% endif %}
+  </header>
+
+  {% if post.excerpt %}
+    <p class="text-lg text-gray-700 mb-6 italic">{{ post.excerpt }}</p>
   {% endif %}
+
+  {% if post.key_takeaways %}
+    <aside class="border-l-4 border-blue-500 bg-blue-50 p-4 mb-8 rounded">
+      <h2 class="font-semibold text-gray-900 mb-2">Key takeaways</h2>
+      <div class="prose-article">{{ post.key_takeaways|safe }}</div>
+    </aside>
+  {% endif %}
+
+  <div class="prose-article">{{ post.content|safe }}</div>
+
+  {% with terms=post.display_tags %}
+    {% if terms %}
+      <div class="mt-8 flex flex-wrap gap-2">
+        {% for tag in terms %}
+          <a href="{% url 'keel_cms:tag_detail' tag.slug %}"
+             class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200">
+            #{{ tag.name }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
   {% endwith %}
 </article>
 {% endblock %}

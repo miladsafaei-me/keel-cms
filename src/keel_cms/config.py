@@ -86,6 +86,12 @@ _DEFAULTS = {
     "organization_node_hook": None,
     "glossary_category_order": [],
     "glossary_surface_labels": {},
+    # Admin OS staff panel. ``admin_os_enabled`` is advisory only (the host opts in
+    # by including ``keel_cms.admin_os.urls``; nothing auto-mounts). ``admin_logout_url``
+    # is the target of the panel navbar "Sign out" link, so a keel-cms host that does
+    # not run keel-web's auth/client apps still has a working logout.
+    "admin_os_enabled": True,
+    "admin_logout_url": "/accounts/logout/",
 }
 
 # Default swappable target for TopicCluster.conversion_landing. Resolved at
@@ -211,3 +217,12 @@ def glossary_category_order() -> list:
 def glossary_surface_labels() -> dict:
     labels = cms_setting("glossary_surface_labels")
     return dict(labels) if labels else {}
+
+
+def admin_os_enabled() -> bool:
+    """Advisory flag; the host still opts in by including the admin_os URLconf."""
+    return bool(cms_setting("admin_os_enabled"))
+
+
+def admin_logout_url() -> str:
+    return cms_setting("admin_logout_url") or "/accounts/logout/"

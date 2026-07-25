@@ -1,58 +1,74 @@
 {% extends "keel_cms/base.html" %}
 
 {% block title %}{{ term_heading }}{% endblock %}
+{% block meta_description %}{{ term.what_is|truncatewords:25 }}{% endblock %}
 
-{% block main %}
-<article>
-  <p><a href="{% url 'keel_cms:trading_glossary' %}">Trading Glossary</a></p>
-  <h1>{{ term_heading }}</h1>
-  {% if term_category %}<p>Category: {{ term_category }}</p>{% endif %}
-  {% if term.what_is %}<p>{{ term.what_is }}</p>{% endif %}
+{% block content %}
+<article class="max-w-3xl mx-auto px-4 py-10">
+  <nav class="text-sm mb-4" aria-label="Breadcrumb">
+    <a href="{% url 'keel_cms:trading_glossary' %}" class="kc-link-brand">Trading Glossary</a>
+  </nav>
+
+  <header class="mb-6">
+    {% if term_category %}<span class="kc-eyebrow text-xs">{{ term_category }}</span>{% endif %}
+    <h1 class="mt-2 text-4xl font-semibold text-gray-900 leading-tight">{{ term_heading }}</h1>
+  </header>
+
+  {% if term.what_is %}
+    <div class="prose-article">{{ term.what_is }}</div>
+  {% endif %}
+
   {% if term.why_it_matters %}
-  <section>
-    <h2>Why it matters</h2>
-    <p>{{ term.why_it_matters }}</p>
-  </section>
+    <section class="mt-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-3">Why it matters</h2>
+      <div class="prose-article">{{ term.why_it_matters }}</div>
+    </section>
   {% endif %}
 
   {% if term_impact_text %}
-  <section>
-    <h2>Trade impact{% if term_impact_level %} — {{ term_impact_level }}{% endif %}</h2>
-    <p>{{ term_impact_text }}</p>
-  </section>
+    <aside class="mt-8 border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+      <h2 class="font-semibold text-gray-900 mb-2">Trade impact{% if term_impact_level %} &mdash; {{ term_impact_level }}{% endif %}</h2>
+      <p class="text-gray-700">{{ term_impact_text }}</p>
+    </aside>
   {% endif %}
 
   {% if term_faqs %}
-  <section>
-    <h2>FAQ</h2>
-    <dl>
-      {% for f in term_faqs %}
-      <dt>{{ f.q }}</dt><dd>{{ f.a }}</dd>
-      {% endfor %}
-    </dl>
-  </section>
+    <section class="mt-10">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">FAQ</h2>
+      <dl class="space-y-4">
+        {% for f in term_faqs %}
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <dt class="font-semibold text-gray-900">{{ f.q }}</dt>
+            <dd class="mt-1 text-gray-600">{{ f.a }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
+    </section>
   {% endif %}
 
   {% if term_related_terms %}
-  <section>
-    <h2>Related terms</h2>
-    <ul>
-      {% for t in term_related_terms %}
-      <li><a href="{% url 'keel_cms:trading_glossary_term' t.slug %}">{{ t.name }}</a></li>
-      {% endfor %}
-    </ul>
-  </section>
+    <section class="mt-10">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">Related terms</h2>
+      <div class="flex flex-wrap gap-2">
+        {% for t in term_related_terms %}
+          <a href="{% url 'keel_cms:trading_glossary_term' t.slug %}"
+             class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200">{{ t.name }}</a>
+        {% endfor %}
+      </div>
+    </section>
   {% endif %}
 
   {% if term_related_posts %}
-  <section>
-    <h2>Related guides</h2>
-    <ul>
-      {% for post in term_related_posts %}
-      <li><a href="{% url 'keel_cms:post_detail' post.slug %}">{{ post.title }}</a></li>
-      {% endfor %}
-    </ul>
-  </section>
+    <section class="mt-10">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">Related guides</h2>
+      <ul class="divide-y divide-gray-200 bg-white rounded-lg border border-gray-200">
+        {% for post in term_related_posts %}
+          <li class="p-4 hover:bg-gray-50">
+            <a href="{% url 'keel_cms:post_detail' post.slug %}" class="kc-title-link font-medium text-gray-900">{{ post.title }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
   {% endif %}
 </article>
 {% endblock %}
