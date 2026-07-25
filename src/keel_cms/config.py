@@ -87,11 +87,13 @@ _DEFAULTS = {
     "glossary_category_order": [],
     "glossary_surface_labels": {},
     # Admin OS staff panel. ``admin_os_enabled`` is advisory only (the host opts in
-    # by including ``keel_cms.admin_os.urls``; nothing auto-mounts). ``admin_logout_url``
-    # is the target of the panel navbar "Sign out" link, so a keel-cms host that does
-    # not run keel-web's auth/client apps still has a working logout.
+    # by including ``keel_cms.admin_os.urls``, or the batteries-included
+    # ``keel_cms.admin_os.site_urls``; nothing auto-mounts). ``admin_logout_url`` is
+    # the target of the panel navbar "Sign out" link; it defaults to the Django admin
+    # logout under the ``site_urls`` remount prefix, so a keel-cms host that does not
+    # run keel-web's auth/client apps still has a working logout.
     "admin_os_enabled": True,
-    "admin_logout_url": "/accounts/logout/",
+    "admin_logout_url": "/staff/django/logout/",
 }
 
 # Default swappable target for TopicCluster.conversion_landing. Resolved at

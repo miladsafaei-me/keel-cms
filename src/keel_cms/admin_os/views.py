@@ -34,6 +34,18 @@ from keel_cms.models import Author, Category, ContentScope, NewsPost, Post, Tag
 from .forms import AuthorForm, CategoryForm, NewsPostForm, PostForm, TagForm
 from .mixins import CmsAdminContextMixin, cms_admin_base_context
 
+
+def blocked_admin(request, *args, **kwargs):
+    """Hide Django's default ``/admin/`` surface.
+
+    When a host wires ``keel_cms.admin_os.site_urls``, the well-known ``/admin/``
+    path (Django's raw admin) is routed here and bounced to the admin-os dashboard,
+    so content is never authored through Django's default forms and the raw admin is
+    never displayed. Django's own admin (login + superuser user/group management)
+    stays available under the remounted ``/staff/django/`` prefix.
+    """
+    return redirect("keel_cms_admin:dashboard")
+
 logger = logging.getLogger(__name__)
 
 
