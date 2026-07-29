@@ -539,6 +539,31 @@ class Post(models.Model):
             "placeholders rendered in the body; kept for filtering/reporting."
         ),
     )
+    images_ready = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text=(
+            "True once this post's machine-produced visuals — the bespoke featured "
+            "hero and any in-article NB2 photoreal images — have been generated. The "
+            "content pipeline no longer produces them inline (they added ~123 minutes "
+            "of chain per cluster and nothing in the run consumes them), so a freshly "
+            "imported post lands False and the standalone images pass "
+            "(`generate_post_images`) flips it True. DO NOT PUBLISH a post while this "
+            "is False: its hero is a generic fallback and any NB2 image is still a "
+            "placeholder block in the body."
+        ),
+    )
+    pending_visuals = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Work order for the standalone images pass, written by content_import "
+            'when a post lands without its visuals: {"image_requests": [...], '
+            '"hero_needed": bool, "body_markdown": "..."}. The pass rehydrates a '
+            "bundle from this, runs the hero / NB2 agents against it, applies the "
+            "results back, and clears this field. Empty once images_ready is True."
+        ),
+    )
     author = models.ForeignKey(
         Author,
         on_delete=models.RESTRICT,
