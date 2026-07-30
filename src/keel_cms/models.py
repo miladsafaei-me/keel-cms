@@ -204,6 +204,35 @@ class Tag(models.Model):
         blank=True,
         help_text="List of objects with tools_desc and tools (string list).",
     )
+    key_takeaways = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="3-5 skimmable TL;DR bullet strings shown near the top of the term page.",
+    )
+    how_it_works = models.TextField(
+        blank=True,
+        help_text="Mechanism/process prose (1-3 paragraphs). Empty for pure-definition terms.",
+    )
+    steps = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Ordered process as a list of {title, detail}; renders as a visual stepper.",
+    )
+    at_a_glance = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Quick-facts card: list of {label, value}.",
+    )
+    comparison = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Comparison table: {heading, columns:[...], rows:[[...]]}; empty dict when none.",
+    )
+    sources = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="EEAT citations: list of {label, url}.",
+    )
     experience_level = models.CharField(max_length=64, blank=True)
     parent_category = models.CharField(max_length=200, blank=True)
     child_category = models.CharField(max_length=200, blank=True)
