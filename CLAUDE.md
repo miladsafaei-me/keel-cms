@@ -13,8 +13,10 @@ block-delimited syntax.
   (`blog_schema`, `news_schema`), RSS `feeds`, the sidebar helpers + cache +
   invalidation `signals`, the editorial-desks **framework** (resolution + schema
   rendering), the body auto-linker / product-showcase / aside **mechanisms**, the
-  glossary render service, the `glossary_visuals` templatetag (keel-ui), and the
-  3-tab body editor (partial + JS + CSS + `content_convert` view).
+  glossary render service, the `glossary_visuals` templatetag (keel-ui), the
+  3-tab body editor (partial + JS + CSS + `content_convert` view), and the
+  **content sitemaps** (`sitemaps.py`: blog-post / news / desk / topic / tag
+  buckets, composed by the host with keel-seo's `LandingSitemap`).
 - **Stays in the host (Bucket 0 / content):** the actual glossary term corpus
   (`trading_glossary.json`), the glossary category rows, the `DESKS` / `BOARD`
   copy, the entity/affiliate registry (broker/exchange links), the funnel-surface
@@ -45,6 +47,29 @@ Two coupling seams intentionally left as documented TODO for the host:
   Celery `refresh_*_rendered` task). Conversion works without it.
 - **`editor_permission_hook`** — defaults to `user.is_staff`; override to match the
   host's content-editor permission.
+
+## Content sitemaps (`sitemaps.py`)
+
+`keel_cms.sitemaps` ships the content buckets for a host's `sitemap.xml` — blog
+posts, news articles, and desk/topic/tag archives — regenerated on every request
+(each read hits current DB state; no cron). A host wires it in three steps:
+
+1. Register the `keel_cms` URL namespace at the host's real serving paths
+   (`keel_cms.contrib.urls` is the reference; a host that serves blog/news at
+   other paths registers its own `app_name = "keel_cms"` aliases). The sitemap
+   reverses `keel_cms:post_detail` / `keel_cms:news_post_detail` /
+   `keel_cms:team_desk` / `keel_cms:topic_list` / `keel_cms:tag_detail`.
+2. Compose `SITEMAPS = {"landings": LandingSitemap, **content_sitemaps()}` and
+   hand it to Django's `sitemap` view. `all_sitemaps()` does the same composition
+   when keel-seo is installed.
+3. Add `django.contrib.sitemaps` to `INSTALLED_APPS` (it ships the `sitemap.xml`
+   template) and ensure the Sites-framework `Site.domain` is the real domain (the
+   sitemap builds absolute URLs from it).
+
+A bucket whose `keel_cms:*` name is not registered is emitted **empty** rather
+than raising, so a host with no topic/desk/tag pages simply omits those buckets
+with no per-project sitemap code. The archive thin-content threshold is
+`KEEL_CMS["archive_min_contents"]` (default 4).
 
 ## The `cp-` class contract (with keel-ui)
 

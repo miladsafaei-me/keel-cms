@@ -94,6 +94,11 @@ _DEFAULTS = {
     # run keel-web's auth/client apps still has a working logout.
     "admin_os_enabled": True,
     "admin_logout_url": "/staff/django/logout/",
+    # Thin-content threshold for the archive sitemaps (desk / topic / tag): an
+    # archive is indexed only once it lists at least this many published contents
+    # (default 4 -> "more than 3"). Keep it in sync with the host's on-page
+    # archive robots-meta rule so the sitemap and the meta never disagree.
+    "archive_min_contents": 4,
 }
 
 # Default swappable target for TopicCluster.conversion_landing. Resolved at
@@ -228,3 +233,13 @@ def admin_os_enabled() -> bool:
 
 def admin_logout_url() -> str:
     return cms_setting("admin_logout_url") or "/accounts/logout/"
+
+
+def archive_min_contents() -> int:
+    """Minimum published-content count for a desk/topic/tag archive to appear in
+    the sitemap (default 4). Below it, the archive stays out — matching the
+    thin-content robots rule on the page itself."""
+    try:
+        return int(cms_setting("archive_min_contents"))
+    except (TypeError, ValueError):
+        return 4
