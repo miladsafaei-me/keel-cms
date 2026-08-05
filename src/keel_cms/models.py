@@ -899,6 +899,7 @@ class ContentPlan(models.Model):
     """
 
     class Status(models.TextChoices):
+        BACKLOG = "backlog", "Backlog (not queued)"
         PLANNED = "planned", "Planned"
         RECONCILED = "reconciled", "Reconciled"
         GENERATING = "generating", "Generating"
@@ -906,6 +907,16 @@ class ContentPlan(models.Model):
         PUBLISHED = "published", "Published"
         REJECTED = "rejected", "Rejected"
         MERGED = "merged", "Merged (deduped)"
+
+    # ``backlog`` sits BEFORE ``planned``: it is the pre-queue shelf, for rows that
+    # are approved content ideas but must not be produced yet. Every queue reader
+    # selects an explicit status — the autopilot's ``content_next_action`` looks only
+    # at ``reconciled``/``generating``, reconcile at ``planned``/``reconciled`` — so a
+    # status outside those sets is inert by construction: no gate has to learn about
+    # it, and no future queue can pick it up by accident. Rows leave the shelf the
+    # same way anything else enters production, through ``planned`` and the reconcile
+    # cannibalization gate; nothing jumps straight to ``reconciled``.
+    QUEUE_OPEN_STATUSES = ("planned", "reconciled")
 
     class Source(models.TextChoices):
         TOP_PAGES = "top_pages", "Competitor Top Pages"
