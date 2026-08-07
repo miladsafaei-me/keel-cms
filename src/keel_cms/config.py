@@ -86,6 +86,19 @@ _DEFAULTS = {
     "organization_node_hook": None,
     "glossary_category_order": [],
     "glossary_surface_labels": {},
+    # Allowed values for ``Tag.term_type`` (host content). Default [] -> no
+    # constraint (any string accepted; the gate treats an unset schema as pass).
+    "glossary_term_types": [],
+    # Per-term-type field schema: {term_type: {"required": [...], "optional": [...]}}.
+    # Each field name is either a first-class Tag attribute (e.g. "what_is",
+    # "formula", "risk_band") or a dotted ``content`` key (e.g.
+    # "content.impact_on_expectancy"). Powers the niche-purity gate (missing a
+    # required field -> reject) and score (filled optional fields -> more on-niche).
+    # Default {} -> every term passes (no host schema declared).
+    "glossary_field_schema": {},
+    # Parent -> [children] browse taxonomy (host content), for nav/validation.
+    # Default {} -> taxonomy derived from the term rows themselves.
+    "glossary_taxonomy": {},
     # Admin OS staff panel. ``admin_os_enabled`` is advisory only (the host opts in
     # by including ``keel_cms.admin_os.urls``, or the batteries-included
     # ``keel_cms.admin_os.site_urls``; nothing auto-mounts). ``admin_logout_url`` is
@@ -136,6 +149,21 @@ def _resolve_hook(key):
 def site_name() -> str:
     """The host brand string (empty by default)."""
     return cms_setting("site_name") or ""
+
+
+def glossary_term_types() -> list:
+    """Allowed ``Tag.term_type`` values (host content; empty -> unconstrained)."""
+    return cms_setting("glossary_term_types") or []
+
+
+def glossary_field_schema() -> dict:
+    """Per-term-type required/optional field schema (host content; empty -> no gate)."""
+    return cms_setting("glossary_field_schema") or {}
+
+
+def glossary_taxonomy() -> dict:
+    """Parent -> [children] browse taxonomy (host content; empty -> derived from rows)."""
+    return cms_setting("glossary_taxonomy") or {}
 
 
 def glossary_title_suffix() -> str:

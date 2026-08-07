@@ -144,10 +144,48 @@ class Tag(models.Model):
     abbreviation = models.CharField(max_length=100, blank=True)
     name = models.CharField(max_length=255)
     is_term = models.BooleanField(default=False, db_index=True)
+    term_type = models.CharField(
+        max_length=40,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "Discriminator for the kind of glossary term (e.g. concept, contract, "
+            "indicator, pattern, strategy, risk, psychology, scam). Domain-neutral: "
+            "the allowed set and each type's required/optional field schema are host "
+            "content, declared via KEEL_CMS['glossary_term_types'] and "
+            "['glossary_field_schema']. Drives the niche-purity gate + score."
+        ),
+    )
     aka = models.JSONField(
         default=list,
         blank=True,
         help_text="Alternate names; list of strings.",
+    )
+    one_line_definition = models.CharField(
+        max_length=280,
+        blank=True,
+        help_text=(
+            "One-sentence TL;DR. Feeds the card subtitle, meta description, "
+            "schema.org DefinedTerm.description, and internal-link hover previews."
+        ),
+    )
+    facets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=(
+            "Cross-cutting labels beyond the parent/child tree (e.g. 'trend', "
+            "'momentum', '60-second', 'otc'); powers related-term discovery and filters."
+        ),
+    )
+    content = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Typed content store for host-domain fields keyed by the consumer's "
+            "glossary_field_schema (e.g. impact_on_expectancy, expiry_and_timing, "
+            "execution_and_platform_nuances). Keeps domain-specific prose out of the "
+            "shared columns so the engine stays business-neutral."
+        ),
     )
     what_is = models.TextField(blank=True)
     why_it_matters_for_partnership = models.TextField(blank=True)
@@ -188,6 +226,22 @@ class Tag(models.Model):
     risk_warning_required = models.BooleanField(
         default=False,
         help_text="When true, the term page links to a risk-warning surface (performance/results content).",
+    )
+    risk_band = models.CharField(
+        max_length=16,
+        blank=True,
+        db_index=True,
+        choices=[
+            ("none", "None"),
+            ("low", "Low"),
+            ("medium", "Medium"),
+            ("high", "High"),
+            ("extreme", "Extreme"),
+        ],
+        help_text=(
+            "Structured risk level for the sidebar risk card and filtering; replaces "
+            "parsing a leading band word out of prose. Blank when risk is not applicable."
+        ),
     )
     faq = models.JSONField(
         default=list,
