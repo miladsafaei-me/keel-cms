@@ -994,6 +994,21 @@ class ContentPlan(models.Model):
         LLM_WITH_ASSETS = "llm_with_assets", "LLM writes + human supplies assets"
         HUMAN_ONLY = "human_only", "Human author only (brief handed off)"
 
+    class ScopeRelevance(models.IntegerChoices):
+        L1 = 1, "L1 · Core (build directly)"
+        L2 = 2, "L2 · Strong (light angle)"
+        L3 = 3, "L3 · Relevant (needs an angle)"
+        L4 = 4, "L4 · Peripheral (shelf)"
+        L5 = 5, "L5 · Fringe (shelf)"
+
+    # ``scope_relevance`` grades how tightly a candidate sits in the consumer's niche
+    # (1 = core in-scope, 5 = fringe/off-scope); the per-level meaning lives in the
+    # consumer's scope doc, not here (this is a generic mechanism). Levels 4-5 are the
+    # SHELF: like ``backlog``, they are meant to be produced-never-now — queue readers
+    # exclude ``scope_relevance__gte=SCOPE_SHELF_FROM`` so a shelved row is inert
+    # until a scope expansion re-grades it up. NULL means ungraded (never shelved).
+    SCOPE_SHELF_FROM = 4
+
     slug = models.SlugField(
         max_length=255,
         unique=True,
@@ -1052,6 +1067,16 @@ class ContentPlan(models.Model):
     )
     priority = models.FloatField(null=True, blank=True, db_index=True)
     clarity = models.PositiveSmallIntegerField(null=True, blank=True)
+    scope_relevance = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        choices=ScopeRelevance.choices,
+        help_text="Scope-relevance grade 1..5 (1=core in-scope, 5=fringe/off-scope). "
+        "Levels 4-5 are shelved: excluded from the production/autopilot cycle and "
+        "hidden from the default blog list until a scope expansion re-grades them. "
+        "The per-level meaning is defined in the consumer's scope doc. NULL = ungraded.",
+    )
     source_type = models.CharField(max_length=20, choices=Source.choices, db_index=True)
     source_ref = models.CharField(
         max_length=500,
