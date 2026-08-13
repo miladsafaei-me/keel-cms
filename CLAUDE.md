@@ -33,20 +33,43 @@ editable in that project — change them **here**, bump the version, and let the
 project pull the new version. Project-specific behavior belongs in `KEEL_CMS`
 config hooks, never in a fork of this code.
 
-## Design library (references, not runtime)
+## Design library + the shipped Blog Index foundation
 
-`keel_cms/design_library/` ships project-neutral **design catalogs** — not Django
-templates, not collected by staticfiles, not served at any URL. `blog_index/` is the
-**Blog Index Template**: one standalone HTML catalog of 37 interchangeable blog-index
-section variants (8 blocks) plus a `manifest.json` an LLM reads to compose a host's
-blog index. Same drift rule as above — edit the catalog **here** and bump the version;
-hosts copy variants out, they never fork it. Selection hooks in the HTML:
-`data-keel-catalog` on `<main>`, `data-keel-block-group` on each `<section>`, and
-`data-keel-block` + `data-keel-variant` (+ `data-keel-requires-js`) on each variant
-`<article>`. Keep the two outputs in sync with `scripts/build_blog_index_manifest.py`
-(repo-only, not shipped): hand-edit the HTML (layout + `data-keel-*` hooks) and the
-script's editorial table, then rerun it — it rebuilds `manifest.json` and fails if the
-table and the HTML hooks disagree.
+`keel_cms/design_library/blog_index/` is the **Blog Index Template**: a standalone
+HTML catalog of 37 interchangeable section variants (8 blocks) plus a `manifest.json`
+an LLM reads to compose a host's blog index. It is a **reference** — not a Django
+template, not served — and a host copies *only the per-variant markup* out of it.
+
+The **styling/behavior is not copied** — it is shipped as a linked foundation, so a
+host fixes theming/RTL/motion/a11y bugs simply by **pinning a newer keel-cms
+version** (they never fork the CSS):
+
+- `static/keel_cms/css/blog-index.css` — tokens + every component/block layout,
+  **scoped under `[data-keel-catalog="blog-index"]`** so it never collides with a
+  host's own `.card`/`.title`/`.meta`. Light + dark (auto via `prefers-color-scheme`,
+  forceable with `data-theme`), RTL-ready (logical properties only), one
+  `prefers-reduced-motion` blanket.
+- `static/keel_cms/js/blog-index.js` — the slider/live behavior (load only for
+  `data-keel-requires-js` variants).
+- `templates/keel_cms/blog_index/_icons.html` — the `#i-*` SVG sprite, `{% include %}`
+  once. **Source of truth**; the catalog inlines an identical copy for reference.
+
+A host wires it: link the CSS, put `data-keel-catalog="blog-index"` on the blog-index
+root, include the icons partial, then copy variant markup. **Category colour is
+token-driven** — one `.chip` rule + `.accent-1..8` helpers set `--cat` (an 8-slot
+neutral palette, remapped per project); no topic names live in the CSS. Theme by
+overriding tokens on the root (or set `--brand` once — `--accent` inherits it).
+
+Drift rule (unchanged): edit the catalog HTML **here** and bump the version; keep the
+HTML + `manifest.json` in sync with `scripts/build_blog_index_manifest.py` (repo-only,
+not shipped) — hand-edit the HTML (`data-keel-*` hooks) and the script's editorial
+table, then rerun it; it rebuilds `manifest.json` and fails if they disagree. The
+catalog's inline `<style>`/sprite must stay consistent with the shipped foundation —
+the catalog `<link>`s the real `blog-index.css` (single source of truth for the
+component styling) and only inlines demo chrome (masthead/footer/variation labels).
+Selection hooks: `data-keel-catalog` on `<main>`, `data-keel-block-group` on each
+`<section>`, `data-keel-block` + `data-keel-variant` (+ `data-keel-requires-js`) on
+each variant `<article>`.
 
 ## Override hooks (config-contract)
 

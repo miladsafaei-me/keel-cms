@@ -67,6 +67,46 @@ the platform model, and this repo's [`CLAUDE.md`](CLAUDE.md) for the contract.
    `<head>` to advertise it. It renders nothing if the name isn't wired, so it's
    always safe to add ahead of the URL wiring.
 
+## Blog Index foundation (design library)
+
+`keel_cms/design_library/blog_index/` is a **reference catalog** of 37 blog-index
+section variants across 8 blocks (hero / latest / trending / category / media /
+slider / live / learn), plus a `manifest.json` for machine composition. You copy
+**only the per-variant markup** into your own template — the styling and behavior are
+**shipped and linked**, so a `keel-cms` version bump delivers every foundation fix
+(theming, RTL, motion, accessibility) with no re-copy.
+
+Wire it once:
+
+```django
+{% load static %}
+{# in <head> — render-blocking, so first paint is styled #}
+<link rel="stylesheet" href="{% static 'keel_cms/css/blog-index.css' %}">
+
+{# once inside <body>, before the blog-index markup #}
+{% include "keel_cms/blog_index/_icons.html" %}
+
+{# the blog-index root carries the scope hook; everything is scoped to it #}
+<main data-keel-catalog="blog-index"> … copied variant markup … </main>
+
+{# only if you used a slider/live variant (data-keel-requires-js) #}
+<script src="{% static 'keel_cms/js/blog-index.js' %}" defer></script>
+```
+
+- **Scoped**: all foundation CSS lives under `[data-keel-catalog="blog-index"]`, so it
+  never collides with your own `.card` / `.title` / `.meta`.
+- **Theming**: override the tokens on the root, or just set `--brand` once (`--accent`
+  inherits it). Dark theme is automatic via `prefers-color-scheme`; force it with
+  `data-theme="dark"` (opt a subtree back to light with `data-theme="light"`).
+- **Category colour is token-driven**: one `.chip` rule + `.accent-1..8` helpers set
+  `--cat` (a neutral 8-slot palette). Remap the slots to your verticals — no topic
+  names are baked into the CSS. Example: `--cat-1: var(--broker-forex);`.
+- **RTL**: set `dir="rtl"` — the foundation uses logical properties throughout, so it
+  mirrors with no extra CSS.
+- **Images**: every variant image is 16:9 with `width`/`height` (CLS-safe); the hero
+  lead models `srcset`/`sizes` + `fetchpriority` — wire your real responsive sources
+  the same way.
+
 ## Config-contract / override hooks (the rawification points)
 
 Everything project-specific is a `KEEL_CMS` key; every one degrades to a safe

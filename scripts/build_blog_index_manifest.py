@@ -24,7 +24,7 @@ CATALOG = ROOT / "src/keel_cms/design_library/blog_index"
 HTML = CATALOG / "blog_index_template.html"
 OUT = CATALOG / "manifest.json"
 
-CATALOG_VERSION = "1.0"
+CATALOG_VERSION = "1.1"
 
 # Editorial metadata — prose keyed by the block + variant slugs that the HTML carries
 # as data-keel-block / data-keel-variant. `js` must match the HTML's data-keel-requires-js.
@@ -236,18 +236,25 @@ def main():
             "needsScript": '[data-keel-requires-js="true"]',
         },
         "howToUse": [
+            "Link the shipped foundation ONCE (do not copy it): <link rel=stylesheet href=\"{% static 'keel_cms/css/blog-index.css' %}\">, put data-keel-catalog=\"blog-index\" on the blog-index root element, and {% include 'keel_cms/blog_index/_icons.html' %} inside <body>. Pinning a newer keel-cms version then delivers every foundation fix (theming, RTL, motion, a11y) automatically.",
             "Decide which blocks the project blog index needs (usually one hero + one latest, plus any of trending/category/media/slider/live/learn).",
             "For each chosen block pick exactly ONE variant using bestFor / layout below.",
-            "Copy each chosen variant's <article data-keel-variant> subtree into the project template.",
-            "Keep the shared foundation: the :root design tokens, the component CSS (.card/.media/.chip/.badge/.meta/.avatar), and the #i-* SVG icon sprite.",
-            "Include the bundled <script> only if any chosen variant has requiresJs=true (all slider and live variants).",
-            "Swap the :root tokens (colors, fonts, radius, spacing) for the project brand. Keep 16:9 media and never put text over an image.",
+            "Copy only that variant's <article data-keel-variant> subtree into the project template (the styling is already linked, not copied).",
+            "Include the bundled behavior only if any chosen variant has requiresJs=true (all slider and live variants): <script src=\"{% static 'keel_cms/js/blog-index.js' %}\" defer></script>.",
+            "Theme by overriding the foundation tokens on the root (or set --brand once — --accent inherits it). Category colour comes from --cat: tag each chip/avatar with an .accent-N helper (or a host class that assigns --cat) — no topic names are baked in. Keep 16:9 media and never put text over an image.",
         ],
         "sharedFoundation": {
-            "designTokens": ":root CSS custom properties — colors, topic hues, spacing scale, radius, shadow, fonts. Swap per project.",
-            "components": ["card", "media (strict 16:9)", "chip (topic tag)", "badge (breaking/live/premium/update)", "meta (avatar/author/time/read-time/comments)", "avatar (CSS initials)", "icon sprite (#i-*)"],
-            "script": "One vanilla <script> (no inline handlers) powers carousels, rotating sliders, auto-updating feeds, the live-blog countdown, ticking counters and the curriculum progress bar. It reads data-* hooks, pauses on hover, and honors prefers-reduced-motion. Seed content renders with JS disabled.",
-            "rules": ["Every image is 16:9 (aspect-ratio:16/9; object-fit:cover).", "No text over images — play/live indicators are icon controls; textual badges sit outside the image.", "CSS variables only; no hardcoded colors/spacing.", "Semantic tags + named selectors."],
+            "consumption": "Linked, not copied. blog-index.css is scoped under [data-keel-catalog=\"blog-index\"], so it never collides with the host's own .card/.title/.meta. Hosts copy only per-variant markup; foundation fixes propagate by version pin.",
+            "assets": {
+                "css": "keel_cms/css/blog-index.css (tokens + every component/block layout; light + dark; RTL-ready via logical properties; a prefers-reduced-motion blanket).",
+                "js": "keel_cms/js/blog-index.js (slider + live behavior; load only for requiresJs variants).",
+                "iconsPartial": "keel_cms/blog_index/_icons.html ({% include %} once; the #i-* SVG sprite).",
+            },
+            "designTokens": "CSS custom properties on the [data-keel-catalog] root — surface/text/border/accent, an 8-slot category palette (--cat-1..8, neutral — NOT topic names), spacing scale, radius, shadow, --container, --scrim, fonts. Override per project; --accent inherits --brand.",
+            "theming": "Dark theme is automatic by prefers-color-scheme and forceable with data-theme=\"dark\" (opt out per subtree with data-theme=\"light\"). Chip/badge tints mix against --surface, so they re-theme in both modes.",
+            "categoryColors": "One .chip rule + .accent-1..8 helpers set --cat. Map the slots to the project's own verticals; the demo's topic names live only in content, never in the CSS.",
+            "components": ["card", "media (strict 16:9)", "chip (--cat via .accent-N)", "badge (breaking/live/premium/update)", "meta (avatar/author/time/read-time/comments)", "avatar (CSS initials)", "icon sprite (#i-*)"],
+            "rules": ["Every image is 16:9 (aspect-ratio:16/9; object-fit:cover) and carries width/height (CLS); the hero lead models srcset/sizes + fetchpriority.", "No text over images — play/live indicators are icon controls; textual badges sit outside the image.", "Tokens only (no stray hex); logical properties (RTL-ready).", "Semantic tags + named selectors; prefers-reduced-motion honored."],
         },
         "blocks": [
             {
