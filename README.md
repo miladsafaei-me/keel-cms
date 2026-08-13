@@ -33,6 +33,14 @@ the platform model, and this repo's [`CLAUDE.md`](CLAUDE.md) for the contract.
 - **Sidebar** — `sidebar_data` / `sidebar_cache` / `news_sidebar_*` + `signals`
   (cache invalidation + ContentPlan publish-state sync).
 
+- **Design library** (`keel_cms/design_library/`) — project-neutral design
+  catalogs (references, **not** runtime templates and not served). Ships the **Blog
+  Index Template**: a standalone HTML catalog of 37 interchangeable blog-index
+  section variants across 8 blocks (hero, latest, trending, category, media, slider,
+  live, learn) + a `manifest.json` an LLM reads to compose a project's blog index
+  without forking. See
+  [`design_library/README.md`](src/keel_cms/design_library/README.md).
+
 ## Consume it (host wiring)
 
 1. `pip install keel-cms` (or an editable install during development). Optional

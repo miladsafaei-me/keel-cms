@@ -33,6 +33,21 @@ editable in that project — change them **here**, bump the version, and let the
 project pull the new version. Project-specific behavior belongs in `KEEL_CMS`
 config hooks, never in a fork of this code.
 
+## Design library (references, not runtime)
+
+`keel_cms/design_library/` ships project-neutral **design catalogs** — not Django
+templates, not collected by staticfiles, not served at any URL. `blog_index/` is the
+**Blog Index Template**: one standalone HTML catalog of 37 interchangeable blog-index
+section variants (8 blocks) plus a `manifest.json` an LLM reads to compose a host's
+blog index. Same drift rule as above — edit the catalog **here** and bump the version;
+hosts copy variants out, they never fork it. Selection hooks in the HTML:
+`data-keel-catalog` on `<main>`, `data-keel-block-group` on each `<section>`, and
+`data-keel-block` + `data-keel-variant` (+ `data-keel-requires-js`) on each variant
+`<article>`. Keep the two outputs in sync with `scripts/build_blog_index_manifest.py`
+(repo-only, not shipped): hand-edit the HTML (layout + `data-keel-*` hooks) and the
+script's editorial table, then rerun it — it rebuilds `manifest.json` and fails if the
+table and the HTML hooks disagree.
+
 ## Override hooks (config-contract)
 
 See the table + examples in [`README.md`](README.md). Every hook lives in

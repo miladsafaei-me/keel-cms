@@ -1,3 +1,4 @@
 recursive-include src/keel_cms/templates *
 recursive-include src/keel_cms/static *
 recursive-include src/keel_cms/data *
+recursive-include src/keel_cms/design_library *
