@@ -11,11 +11,13 @@ templates by shadowing, not by editing this module.
 from django.urls import path
 
 from . import views
+from ..feeds import BlogRssFeed
 
 app_name = "keel_cms"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("feed/blog.xml", BlogRssFeed(), name="blog_rss_feed"),
     path("blog/", views.post_list, name="post_list"),
     path("blog/<slug:slug>/", views.post_detail, name="post_detail"),
     path("topic/<slug:slug>/", views.topic_list, name="topic_list"),

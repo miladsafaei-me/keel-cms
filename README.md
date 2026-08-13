@@ -19,7 +19,9 @@ the platform model, and this repo's [`CLAUDE.md`](CLAUDE.md) for the contract.
 - **Render pipeline** — `markdown_convert` (Markdown↔HTML, 3-tab round-trip + the
   trusted pipeline path), `html_sanitize` (nh3 allowlist), `article_toc` (h2 TOC +
   intro/showcase splits), `blog_schema` / `news_schema` (schema.org JSON-LD),
-  `feeds` (RSS).
+  `feeds` (RSS — `BlogRssFeed`, served at `keel_cms:blog_rss_feed`, and the
+  `{% blog_feed_link %}` templatetag that renders the `<link rel="alternate">`
+  discovery tag for it in a host's `<head>`).
 - **3-tab body editor** — `templates/keel_cms/_content_editor.html` +
   `static/keel_cms/{js,css}/content-editor.*` + `editor_views.content_convert`.
 - **Render-time slots** (all neutralized to hooks) — `body_linking` (auto-link
@@ -48,8 +50,14 @@ the platform model, and this repo's [`CLAUDE.md`](CLAUDE.md) for the contract.
    `keel_cms:post_list`, `keel_cms:post_detail`, `keel_cms:topic_list`,
    `keel_cms:tag_detail`, `keel_cms:trading_glossary_term`, `keel_cms:team_desk`,
    `keel_cms:news_post_list`, `keel_cms:news_post_detail`, `keel_cms:news_topic_list`,
-   `keel_cms:news_author_list`.
+   `keel_cms:news_author_list`, `keel_cms:blog_rss_feed`.
 6. Configure via `KEEL_CMS` (all optional — see `keel_cms/config.py`).
+7. Optional — feed discovery: once `keel_cms:blog_rss_feed` reverses (either by
+   including `keel_cms.contrib.urls` directly, or by aliasing that name at your own
+   feed route the way you alias the other `keel_cms:*` names), drop
+   `{% load keel_cms_tags %}{% blog_feed_link %}` into your base template's
+   `<head>` to advertise it. It renders nothing if the name isn't wired, so it's
+   always safe to add ahead of the URL wiring.
 
 ## Config-contract / override hooks (the rawification points)
 
