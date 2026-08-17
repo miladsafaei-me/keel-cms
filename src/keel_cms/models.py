@@ -505,6 +505,31 @@ class TopicCluster(models.Model):
     def __str__(self):
         return self.name
 
+    def ordered_posts(self):
+        """Every published post in this cluster, in reading-path order.
+
+        Sorts by ``cluster_position`` (0 = pillar, 1..N = spokes) when a post has
+        one set; posts without a position fall back to pillar-first-then-recency,
+        so a cluster with no reading order defined yet still renders sensibly.
+        Source list for a "Learning Path" widget.
+        """
+        posts = list(
+            self.posts.filter(status=Post.Status.PUBLISHED)
+            .select_related("author", "reviewer", "category")
+            .order_by("-published_at")
+        )
+        pillar_id = self.pillar_id
+
+        def sort_key(post):
+            if post.cluster_position is not None:
+                return (0, post.cluster_position)
+            if post.pk == pillar_id:
+                return (0, 0)
+            return (1, 0)
+
+        posts.sort(key=sort_key)
+        return posts
+
 
 class ActivePostManager(models.Manager):
     def get_queryset(self):
@@ -685,6 +710,16 @@ class Post(models.Model):
         related_name="posts",
         help_text="The topic cluster this post belongs to (the 1:1 content spine).",
     )
+    cluster_position = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "This post's step in its topic_cluster's reading path (0 = pillar, "
+            "1..N = spokes in recommended reading order). Null when the post "
+            "isn't in a cluster, or the cluster has no defined reading order yet. "
+            "Powers next_in_path() / TopicCluster.ordered_posts()."
+        ),
+    )
     markets = models.ManyToManyField(Market, related_name="posts", blank=True)
     audience_roles = models.ManyToManyField(AudienceRole, related_name="posts", blank=True)
     audience_levels = models.ManyToManyField(AudienceLevel, related_name="posts", blank=True)
@@ -716,6 +751,13 @@ class Post(models.Model):
     class Meta:
         db_table = "blog_post"
         ordering = ["-published_at", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["topic_cluster", "cluster_position"],
+                name="blog_post_cluster_position_uniq",
+                condition=models.Q(topic_cluster__isnull=False, cluster_position__isnull=False),
+            ),
+        ]
 
     def __str__(self):
         return self.title
@@ -815,6 +857,26 @@ class Post(models.Model):
         if pillar_id and pillar_id != self.pk:
             siblings.sort(key=lambda p: 0 if p.pk == pillar_id else 1)
         return siblings[:limit]
+
+    def next_in_path(self):
+        """The next post in this post's reading-path sequence, or ``None``.
+
+        Looks up the published post in the same cluster at ``cluster_position +
+        1``. Returns ``None`` when this post has no cluster, no ``cluster_position``
+        set, or is already the last step — it does not wrap back to the pillar
+        (a "Learning Path" widget renders the hub link separately from "next").
+        """
+        if not self.topic_cluster_id or self.cluster_position is None:
+            return None
+        return (
+            Post.objects.filter(
+                status=Post.Status.PUBLISHED,
+                topic_cluster_id=self.topic_cluster_id,
+                cluster_position=self.cluster_position + 1,
+            )
+            .select_related("author", "reviewer", "category")
+            .first()
+        )
 
 
 class PostTag(models.Model):
