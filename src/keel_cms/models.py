@@ -1207,6 +1207,113 @@ class ContentPlan(models.Model):
         }
 
 
+class KeywordClusterJob(models.Model):
+    """A pool of raw, unclustered keywords waiting for the clustering stage.
+
+    This is the INPUT side of keyword clustering, and it is deliberately a separate
+    table from :class:`ContentPlan` rather than another status on it. The two hold
+    different units of work: a ContentPlan row is one planned article with a title,
+    an intent and a slug; a job here is N keywords that have not been read yet, so
+    nobody knows how many articles they become — that is precisely what clustering
+    decides. Modelling the pool as ContentPlan rows would mean inventing titles
+    before the analysis that produces them, and every queue reader downstream
+    (reconcile, export_worklist, the autopilot) would have to learn to skip them.
+
+    The lifecycle is therefore: a research source deposits a job here → the content
+    autopilot drains this queue BEFORE it touches content production → clustering
+    emits a resolved spec → that spec lands as many ContentPlan rows carrying
+    ``source_type=keyword_clustering`` (the OUTPUT side) → normal production picks
+    them up. Draining this queue first is what keeps the roadmap from running dry:
+    until now, refilling it was the one step that always needed a human.
+    """
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        CLUSTERING = "clustering", "Clustering (claimed)"
+        CLUSTERED = "clustered", "Clustered"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped (won't cluster)"
+
+    # Only ``queued`` is visible to the autopilot. ``clustering`` is a claim marker so
+    # a second tick never re-runs an in-flight job; the terminal three are inert.
+    QUEUE_OPEN_STATUSES = ("queued",)
+
+    class Source(models.TextChoices):
+        SEARCH_CONSOLE = "search_console", "Search Console"
+        KEYWORD_RESEARCH = "keyword_research", "Keyword Research Export"
+        MANUAL = "manual", "Manual"
+
+    slug = models.SlugField(max_length=255, unique=True)
+    label = models.CharField(
+        max_length=255,
+        help_text="Human name for the pool — usually the topic the keywords share.",
+    )
+    market = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Scaffold market slug the pool belongs to; blank means cross-market.",
+    )
+    # [{"keyword": str, "volume": int, "impressions": int, "clicks": int,
+    #   "position": float}] — only ``keyword`` is required. ``volume`` is what the
+    # clustering tools read; for a Search-Console pool it carries impressions, since
+    # that is the only demand estimator GSC gives us.
+    keywords = models.JSONField(default=list, blank=True)
+    source_type = models.CharField(
+        max_length=20, choices=Source.choices, default=Source.MANUAL, db_index=True
+    )
+    source_ref = models.CharField(max_length=500, blank=True)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.QUEUED, db_index=True
+    )
+    priority = models.FloatField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Summed demand across the pool — drains highest-demand pools first.",
+    )
+    notes = models.TextField(blank=True)
+    # Filled in as the job is worked, so a failed run leaves a readable trail.
+    prep_dir = models.CharField(max_length=500, blank=True)
+    spec_path = models.CharField(max_length=500, blank=True)
+    produced_plan_count = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    claimed_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-priority", "-created_at"]
+        verbose_name = "Keyword cluster job"
+
+    def __str__(self):
+        return f"{self.label} ({self.keyword_count} keywords)"
+
+    @property
+    def keyword_count(self):
+        return len(self.keywords or [])
+
+    def keyword_rows(self):
+        """``(keyword, volume)`` pairs in the shape the clustering tools ingest."""
+        rows = []
+        for kw in self.keywords or []:
+            if not isinstance(kw, dict):
+                continue
+            term = str(kw.get("keyword", "")).strip()
+            if not term:
+                continue
+            volume = kw.get("volume")
+            if volume is None:
+                volume = kw.get("impressions", 0)
+            try:
+                volume = int(volume or 0)
+            except (TypeError, ValueError):
+                volume = 0
+            rows.append((term, volume))
+        return rows
+
+
 class ActiveNewsPostManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
