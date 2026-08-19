@@ -1,6 +1,20 @@
 """Render a glossary term's ``visuals`` specs via the keel-ui component library.
 
-Each item in ``term.visuals`` is ``{"component_id": str, "spec": {...}, "caption": str?}``.
+Each item in ``term.visuals`` is ``{"component_id": str, "spec": {...}, "caption": str?,
+"slot": str?}``.
+
+**Slots.** A term page has more than one place a visual belongs. A picture of what the
+term compares opens the article; a calculator belongs beside the formula it computes,
+not stacked under the opening paragraph with everything else. So an item may name the
+``slot`` it is for, and the template calls this tag once per anchor. An item with no
+slot renders in the default one, which is the behaviour every term had before slots
+existed — so adding an anchor to a template moves nothing on its own.
+
+**Host-rendered visuals.** keel-ui owns every visual whose markup can be built from a
+JSON spec alone. A few cannot: a figure drawn from the term's own fields by
+``keel_content.heroart`` is one, and keel-cms neither depends on keel-content nor
+should. Those are declared by the host in ``KEEL_CMS["glossary_visual_renderers"]`` and
+called with ``(term, spec)``; everything else goes to keel-ui unchanged.
 The component library (``keel_ui``) owns the typed catalog: it validates ``spec``
 against the component's JSON Schema and renders the component's server-authored
 template, so the model/editor never emits raw HTML/CSS. The same engine backs the
@@ -24,6 +38,8 @@ from keel_ui import render as render_component
 from keel_ui.registry import ComponentNotFound, get_component
 from keel_ui.renderer import RenderError, SpecValidationError
 
+from keel_cms.config import glossary_visual_renderers
+
 register = template.Library()
 log = logging.getLogger(__name__)
 
@@ -42,6 +58,10 @@ _EYEBROW_BY_CATEGORY = {
     "reference": "For reference",
 }
 
+#: Where an item with no slot of its own renders. Named rather than inlined so a host
+#: template that adds anchors cannot accidentally move visuals that predate them.
+DEFAULT_SLOT = "intro"
+
 
 def _eyebrow_for(item: dict, component_id: str) -> str:
     """Resolve an item's eyebrow: explicit value wins, else a category default."""
@@ -55,24 +75,33 @@ def _eyebrow_for(item: dict, component_id: str) -> str:
 
 
 @register.simple_tag
-def glossary_visuals(term) -> str:
-    """Return the rendered visuals section for ``term`` (empty string when none)."""
+def glossary_visuals(term, slot: str = DEFAULT_SLOT) -> str:
+    """The rendered visuals for one slot of ``term`` (empty string when it has none)."""
     items = getattr(term, "visuals", None) or []
     if not isinstance(items, list):
         return ""
 
+    local = glossary_visual_renderers()
     blocks: list[str] = []
     for item in items:
         if not isinstance(item, dict):
+            continue
+        if (item.get("slot") or DEFAULT_SLOT) != slot:
             continue
         component_id = item.get("component_id")
         spec = item.get("spec") or {}
         if not component_id or not isinstance(spec, dict):
             continue
+        renderer = local.get(component_id)
         try:
-            html = render_component(component_id, spec)
+            html = renderer(term, spec) if renderer else render_component(component_id, spec)
         except (ComponentNotFound, SpecValidationError, RenderError) as exc:
             log.warning("glossary visual skipped (component=%s): %s", component_id, exc)
+            continue
+        except Exception as exc:  # noqa: BLE001 - a host renderer may raise anything
+            log.warning("host glossary visual failed (component=%s): %s", component_id, exc)
+            continue
+        if not html:
             continue
         caption = item.get("caption")
         cap_html = (
@@ -84,12 +113,15 @@ def glossary_visuals(term) -> str:
         eye_html = (
             f'<div class="tg-term__visual-eyebrow">{escape(eyebrow)}</div>' if eyebrow else ""
         )
-        blocks.append(f'<figure class="tg-term__visual">{eye_html}{html}{cap_html}</figure>')
+        blocks.append(
+            f'<figure class="tg-term__visual tg-term__visual--{escape(component_id)}">'
+            f"{eye_html}{html}{cap_html}</figure>")
 
     if not blocks:
         return ""
 
     body = "\n".join(blocks)
     return mark_safe(
-        f'<section class="tg-term__visuals" aria-label="Visual explanation">{body}</section>'
+        f'<section class="tg-term__visuals tg-term__visuals--{escape(slot)}" '
+        f'aria-label="Visual explanation">{body}</section>'
     )

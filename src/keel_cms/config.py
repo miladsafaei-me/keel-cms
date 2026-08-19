@@ -54,6 +54,17 @@ degrades to a safe no-op, so ``import keel_cms`` succeeds with no configuration)
         # ``related_surfaces``: {url: label}. Default: {} -> the raw URL is shown
         # as its own label.
         "glossary_surface_labels": {"/pricing": "Pricing"},
+
+        # Visuals a term page renders with host code instead of with keel-ui:
+        # {component_id: dotted path to a callable (term, spec) -> html}. keel-ui
+        # owns every visual whose markup can be built from a JSON spec alone; this
+        # is for the ones that cannot, because they are drawn from the term's own
+        # fields by a package keel-cms does not and should not depend on (heroart
+        # in keel-content is the case this exists for). Default: {} -> every
+        # component_id goes to keel-ui, which is the standalone behaviour.
+        "glossary_visual_renderers": {
+            "term_illustration": "myapp.visuals.illustration.render",
+        },
     }
 
 Two related settings live at the top level of ``settings`` rather than inside the
@@ -86,6 +97,7 @@ _DEFAULTS = {
     "organization_node_hook": None,
     "glossary_category_order": [],
     "glossary_surface_labels": {},
+    "glossary_visual_renderers": {},
     # Allowed values for ``Tag.term_type`` (host content). Default [] -> no
     # constraint (any string accepted; the gate treats an unset schema as pass).
     "glossary_term_types": [],
@@ -247,6 +259,22 @@ def aside_data(post) -> dict:
 def glossary_category_order() -> list:
     order = cms_setting("glossary_category_order")
     return list(order) if order else []
+
+
+def glossary_visual_renderers() -> dict:
+    """Host-rendered glossary visuals: ``{component_id: callable(term, spec) -> str}``.
+
+    Resolved once per call and never cached, so a broken dotted path degrades to "that
+    one visual does not render" rather than to an import error at startup — the same
+    best-effort contract the rest of the visuals pipeline keeps.
+    """
+    out = {}
+    for component_id, dotted in (cms_setting("glossary_visual_renderers") or {}).items():
+        try:
+            out[component_id] = import_string(dotted)
+        except Exception:
+            continue
+    return out
 
 
 def glossary_surface_labels() -> dict:
