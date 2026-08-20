@@ -82,6 +82,13 @@ KEEL_CMS = {
 
         # Where the judged verdicts live (git-tracked, reviewable).
         "verdicts_path": BASE_DIR / "data" / "glossary-tier-verdicts.json",
+
+        # Tiers whose term pages must not be indexed (empty = the package changes nothing).
+        "noindex_tiers": ["T3", "T4", "T5"],
+        # Refuse to save a NEW term that has no verdict yet.
+        "require_verdict_on_save": True,
+        # Only when the term route is not the one get_absolute_url() reverses.
+        "term_url_template": "/tag/{slug}",
     },
 }
 ```
@@ -128,8 +135,78 @@ without writing.
 ```
 
 Nothing is cached: re-run after new terms, rewired related-terms edges, or a fresh judging
-pass. New terms simply show as unjudged (they land in T3–T5 until judged), so the loop is
-incremental — export only the new ones, judge, ingest.
+pass.
+
+## The stored tier
+
+`Tag.relevancy_tier` (and the equivalent column a host adds to its own term model) holds
+the last computed tier, so views, seeders and sitemaps can filter on it without recomputing
+the corpus. **`glossary_tier_apply` is its only writer:**
+
+```bash
+./manage.py glossary_tier_apply [--dry-run]
+```
+
+It recomputes everything and bulk-updates the rows that drifted. Run it after ingesting
+verdicts, after adding terms, and after rewiring related-terms edges — axis 3 moves for the
+whole corpus whenever the citation graph changes.
+
+A host adopting the column adds it as `CharField(max_length=2, blank=True, db_index=True)`;
+`keel_cms.Tag` ships it from v0.14.0 (migration `0009`).
+
+## Nothing enters the corpus unranked
+
+`Tag.save()` stamps the current tier onto every glossary term before the row is written. With
+`require_verdict_on_save: True`, a **new** term that has no verdict raises `TierNotJudged`
+instead of being saved — so the corpus cannot grow a blind spot the priority queue never
+sees. Re-saving an existing term never raises: an old row must not become unsaveable because
+the judging pass has not reached it yet.
+
+A host with its own term model gets the same guarantee by calling the shared helper in its
+`save()`:
+
+```python
+def save(self, *args, **kwargs):
+    from keel_cms import glossary_tiers
+    glossary_tiers.stamp_tier(self, is_new=self.pk is None)
+    super().save(*args, **kwargs)
+```
+
+The workflow for a new term is therefore: write the candidate to a JSON file, judge it, then
+author it.
+
+```bash
+./manage.py glossary_tier_export --candidates new-terms.json --out /tmp/batches
+# a Sonnet subagent answers the batch
+./manage.py glossary_tier_ingest /tmp/batches/answers-001.json --allow-new
+# now the term saves, stamped with its tier
+```
+
+`--candidates` takes `[{slug, name, category, summary}]` for terms that do not exist yet;
+`--allow-new` lets the store hold a verdict for a slug the corpus has not seen.
+
+## Keeping low tiers out of the index
+
+Declaring `noindex_tiers` makes the tier an SEO gate as well as a queue:
+
+```bash
+./manage.py glossary_tier_sync_landings [--dry-run]
+```
+
+It flips `is_indexable` off on the `Landing` row of every term at or below the bar (the
+landing model is the swappable `KEEL_CMS_LANDING_MODEL`), and clears keel-seo's per-path
+cache. Because keel-seo renders `index,follow` only for pages holding an indexable landing —
+and every sitemap bucket is built from the same rows — one flag removes the page from the
+index *and* the sitemap, with no chance of the two disagreeing.
+
+**The command only ever de-indexes.** Re-indexing is the host seeder's decision, since only
+it knows the project's other exclusions (merged slugs, thin pages, editorial holds). Teach
+that seeder to skip terms failing `glossary_tiers.is_indexable_tier(term.relevancy_tier)`,
+so a later run cannot silently re-index what the bar just removed.
+
+Term pages must actually render the gate: `{% include "keel_seo/robots_meta.html" %}` in the
+term template's `<head>`. Without it the page carries no robots directive at all, and a
+de-indexed landing only removes it from the sitemap.
 
 ## What re-judging costs
 

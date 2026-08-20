@@ -288,6 +288,17 @@ class Tag(models.Model):
         help_text="EEAT citations: list of {label, url}.",
     )
     experience_level = models.CharField(max_length=64, blank=True)
+    relevancy_tier = models.CharField(
+        max_length=2,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "Production-priority tier T1-T5 computed by keel_cms.glossary_tiers "
+            "(service proximity / search demand / hub value). Denormalised onto the row "
+            "so views, sitemaps and the noindex gate can filter on it without recomputing; "
+            "``glossary_tier_apply`` is what refreshes it. Blank means never tiered."
+        ),
+    )
     parent_category = models.CharField(max_length=200, blank=True)
     child_category = models.CharField(max_length=200, blank=True)
     related_terms = models.ManyToManyField(
@@ -305,6 +316,20 @@ class Tag(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def save(self, *args, **kwargs):
+        """Stamp the relevancy tier on glossary terms before the row is written.
+
+        A host that turns on ``KEEL_CMS['glossary_tiers']['require_verdict_on_save']``
+        gets the hard version of the rule: a NEW term cannot be saved until it has been
+        judged, so nothing enters the corpus unranked and the priority queue can never
+        silently go stale. See ``keel_cms.glossary_tiers.stamp_tier``.
+        """
+        if getattr(self, "is_term", False):
+            from . import glossary_tiers
+
+            glossary_tiers.stamp_tier(self, is_new=self.pk is None)
+        super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:
         """Canonical public URL: glossary terms under the term route, else the tag route.

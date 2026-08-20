@@ -42,6 +42,12 @@ class Command(BaseCommand):
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--project", default="")
         parser.add_argument("--judge", default="sonnet", help="label for who made the judgement")
+        parser.add_argument(
+            "--allow-new",
+            action="store_true",
+            help="accept verdicts for slugs that are not in the corpus yet (terms judged "
+                 "before they are authored, which is what the save-time gate requires)",
+        )
 
     def handle(self, *args, **options):
         cfg = glossary_tiers.config()
@@ -63,7 +69,7 @@ class Command(BaseCommand):
             for entry in _iter_verdicts(payload):
                 slug = str(entry.get("slug") or "").strip()
                 band = str(entry.get("search_volume") or "").strip().lower()
-                if slug not in known:
+                if slug not in known and not (options["allow_new"] and slug):
                     unknown_slugs.append(slug or "(blank)")
                     continue
                 if band not in glossary_tiers.VOLUME_BANDS:

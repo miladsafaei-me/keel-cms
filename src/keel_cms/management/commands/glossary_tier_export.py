@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from keel_cms import glossary_tiers
 
@@ -53,6 +53,34 @@ Return JSON only, in exactly this shape, one entry per term, same slugs, nothing
 """
 
 
+def _candidate_rows(path: Path) -> list[dict]:
+    """Normalise a candidate file (terms that are not in the corpus yet) to export rows."""
+    if not path.exists():
+        raise CommandError(f"No such candidates file: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    items = payload.get("terms") if isinstance(payload, dict) else payload
+    if not isinstance(items, list):
+        raise CommandError("Candidates file must be a list of terms, or {\"terms\": [...]}.")
+    rows = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        slug = str(item.get("slug") or "").strip()
+        name = str(item.get("name") or item.get("term") or "").strip()
+        if not slug or not name:
+            raise CommandError(f"Every candidate needs a slug and a name; got {item!r}")
+        rows.append(
+            {
+                "slug": slug,
+                "name": name,
+                "aka": list(item.get("aka") or []),
+                "category": str(item.get("category") or "").strip(),
+                "summary": str(item.get("summary") or "").strip(),
+            }
+        )
+    return rows
+
+
 class Command(BaseCommand):
     help = "Export unjudged glossary terms as agent-ready judging batches."
 
@@ -63,6 +91,13 @@ class Command(BaseCommand):
         parser.add_argument("--all", action="store_true", help="export every term, judged or not")
         parser.add_argument("--project", default="", help="project label written into each batch")
         parser.add_argument("--brief", action="store_true", help="print the judging brief and exit")
+        parser.add_argument(
+            "--candidates",
+            default="",
+            help="JSON file of terms that do not exist yet ([{slug, name, category, summary}] "
+                 "or {\"terms\": [...]}); batches those instead of reading the corpus, so a "
+                 "new term can be judged BEFORE it is authored and saved",
+        )
 
     def handle(self, *args, **options):
         cfg = glossary_tiers.config()
@@ -73,9 +108,12 @@ class Command(BaseCommand):
             self.stdout.write(brief)
             return
 
-        verdicts = glossary_tiers.load_verdicts(cfg=cfg)
-        ranked = glossary_tiers.rank(glossary_tiers.term_rows(cfg), verdicts, cfg)
-        pending = ranked if options["all"] else glossary_tiers.unjudged(ranked)
+        if options["candidates"]:
+            pending = _candidate_rows(Path(options["candidates"]))
+        else:
+            verdicts = glossary_tiers.load_verdicts(cfg=cfg)
+            ranked = glossary_tiers.rank(glossary_tiers.term_rows(cfg), verdicts, cfg)
+            pending = ranked if options["all"] else glossary_tiers.unjudged(ranked)
         pending.sort(key=lambda r: r["name"].lower())
         if options["limit"]:
             pending = pending[: options["limit"]]

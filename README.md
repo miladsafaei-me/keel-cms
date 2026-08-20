@@ -112,7 +112,10 @@ Wire it once:
 Which glossary term earns the next full article, answered the same way in every consumer:
 three yes/no axes (service proximity / search demand / hub value) combined by a fixed table
 into T1-T5. `keel_cms.glossary_tiers` is the engine; `glossary_tier_export`,
-`glossary_tier_ingest` and `glossary_tiers` are the management commands. Search demand is an
+`glossary_tier_ingest`, `glossary_tiers`, `glossary_tier_apply` (stores the tier on
+`Tag.relevancy_tier`) and `glossary_tier_sync_landings` (de-indexes tiers below the host's
+bar, sitemap included) are the management commands. `Tag.save()` stamps the tier on every
+term, and refuses an unjudged new term where the host asks it to. Search demand is an
 agent judgement written to a git-tracked JSON file — no keyword tool, no API key — and
 service proximity is declared per project, so the package stays business-neutral. Full
 framework, config keys and the export/judge/ingest loop: **[GLOSSARY-TIERS.md](GLOSSARY-TIERS.md)**.

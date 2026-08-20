@@ -99,6 +99,9 @@ DEFAULTS = {
     "volume_true_bands": ["high", "medium"],
     "hub_threshold": "auto",
     "verdicts_path": "",
+    "noindex_tiers": [],
+    "require_verdict_on_save": False,
+    "term_url_template": "",
 }
 
 
@@ -119,6 +122,7 @@ def config() -> dict:
     cfg["service_facets"] = {str(f).strip().lower() for f in cfg["service_facets"] if str(f).strip()}
     cfg["service_slugs"] = {str(s).strip() for s in cfg["service_slugs"] if str(s).strip()}
     cfg["volume_true_bands"] = {str(b).strip().lower() for b in cfg["volume_true_bands"]}
+    cfg["noindex_tiers"] = {str(t).strip().upper() for t in cfg["noindex_tiers"] if str(t).strip()}
     mode = str(cfg.get("proximity_mode") or "hybrid").strip().lower()
     cfg["proximity_mode"] = mode if mode in {"categories", "judged", "hybrid"} else "hybrid"
     return cfg
@@ -305,3 +309,128 @@ def distribution(ranked: Iterable[dict]) -> dict:
 def unjudged(ranked: Iterable[dict]) -> list[dict]:
     """Terms with no verdict yet — the export queue."""
     return [r for r in ranked if not r["judged"]]
+
+
+class TierNotJudged(Exception):
+    """A term reached ``save()`` with no tier verdict, under a host that requires one.
+
+    Raised only when ``require_verdict_on_save`` is on. The message carries the exact
+    commands that resolve it, because the caller is usually an authoring pipeline that
+    has no other way to learn what it is missing.
+    """
+
+
+def tier_for_term(term: Any, cfg: dict | None = None, verdicts: dict | None = None) -> str:
+    """The tier a single term object would get right now, judged verdict included.
+
+    Hub value is read from the term's own related-terms edges, so an unsaved term (which
+    has none yet) is simply not a hub until ``glossary_tier_apply`` recomputes the corpus.
+    """
+    cfg = cfg or config()
+    fm = cfg["field_map"]
+    verdicts = load_verdicts(cfg=cfg) if verdicts is None else verdicts
+    slug = str(_get(term, fm["slug"]))
+    verdict = verdicts.get(slug) or {}
+    row = {
+        "slug": slug,
+        "category": str(_get(term, fm["category"])).strip(),
+        "facets": list(_get(term, fm["facets"], []) or []),
+        "indegree": _indegree_of(term, fm["related"]),
+    }
+    proximity = service_proximity(row, verdict, cfg)
+    demand = search_demand(verdict, cfg)
+    hub = row["indegree"] >= _stored_hub_threshold(cfg)
+    return TIER_TABLE[(proximity, demand, hub)]
+
+
+def _indegree_of(term: Any, related_field: str) -> int:
+    """Incoming related-terms edges for one term; 0 for an unsaved row or a model without the M2M."""
+    if not getattr(term, "pk", None):
+        return 0
+    incoming = getattr(term, "related_from", None)
+    if incoming is None:
+        return 0
+    try:
+        return incoming.count()
+    except Exception:
+        return 0
+
+
+_HUB_CACHE: dict[str, int] = {}
+
+
+def reset_caches() -> None:
+    """Drop the memoized hub threshold. Call after a corpus-wide recompute."""
+    _HUB_CACHE.clear()
+
+
+def _stored_hub_threshold(cfg: dict) -> int:
+    """Hub bar for a single-term decision: the configured int, or the corpus median.
+
+    The ``"auto"`` median costs a full corpus scan, and this runs on every term save, so
+    it is memoized per process. A stale bar can only mis-stamp axis 3 on a single row
+    between corpus recomputes, and ``glossary_tier_apply`` (which resets the cache) is
+    what restates the whole corpus anyway.
+    """
+    raw = cfg.get("hub_threshold", "auto")
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return max(1, raw)
+    key = str(cfg.get("term_model"))
+    if key not in _HUB_CACHE:
+        try:
+            _HUB_CACHE[key] = hub_threshold(term_rows(cfg), cfg)
+        except Exception:
+            return 2
+    return _HUB_CACHE[key]
+
+
+def stamp_tier(term: Any, is_new: bool = False, cfg: dict | None = None) -> str:
+    """Write the current tier onto ``term.relevancy_tier`` before it is saved.
+
+    With ``require_verdict_on_save`` on, an unjudged NEW term raises ``TierNotJudged``
+    instead of being saved unranked — the corpus stays fully tiered by construction.
+    An already-saved term is never blocked: re-saving an old row must not fail because
+    the judging pass has not reached it yet.
+    """
+    cfg = cfg or config()
+    if not hasattr(term, "relevancy_tier"):
+        return ""
+    fm = cfg["field_map"]
+    slug = str(_get(term, fm["slug"]))
+    verdicts = load_verdicts(cfg=cfg)
+    if slug not in verdicts:
+        if is_new and cfg.get("require_verdict_on_save"):
+            raise TierNotJudged(
+                f"Glossary term '{slug}' has no tier verdict, and this project requires one "
+                f"before a new term is saved. Judge it first:\n"
+                f"  ./manage.py glossary_tier_export --candidates <file.json> --out <dir>\n"
+                f"  (hand the batch to a Sonnet subagent, then)\n"
+                f"  ./manage.py glossary_tier_ingest <answers.json> --allow-new"
+            )
+        if term.relevancy_tier:
+            return term.relevancy_tier
+    tier = tier_for_term(term, cfg, verdicts)
+    term.relevancy_tier = tier
+    return tier
+
+
+def is_indexable_tier(tier: str, cfg: dict | None = None) -> bool:
+    """False when the host has declared this tier noindex. Unjudged (blank) stays indexable."""
+    cfg = cfg or config()
+    return str(tier or "").strip().upper() not in cfg["noindex_tiers"]
+
+
+def term_url(term: Any, cfg: dict | None = None) -> str:
+    """Public URL of a term: the host's ``term_url_template`` if set, else the model's own.
+
+    A host whose glossary route is not the one ``get_absolute_url()`` reverses (terms served
+    from a shared tag route, a second glossary, a non-keel-cms model) sets
+    ``term_url_template`` to something like ``"/tag/{slug}"`` and the whole tier tooling
+    resolves URLs correctly without touching the model.
+    """
+    cfg = cfg or config()
+    template = str(cfg.get("term_url_template") or "").strip()
+    if template:
+        return template.format(slug=_get(term, cfg["field_map"]["slug"]))
+    getter = getattr(term, "get_absolute_url", None)
+    return getter() if callable(getter) else ""
