@@ -107,6 +107,16 @@ Wire it once:
   lead models `srcset`/`sizes` + `fetchpriority` — wire your real responsive sources
   the same way.
 
+## Glossary relevancy tiers (T1-T5)
+
+Which glossary term earns the next full article, answered the same way in every consumer:
+three yes/no axes (service proximity / search demand / hub value) combined by a fixed table
+into T1-T5. `keel_cms.glossary_tiers` is the engine; `glossary_tier_export`,
+`glossary_tier_ingest` and `glossary_tiers` are the management commands. Search demand is an
+agent judgement written to a git-tracked JSON file — no keyword tool, no API key — and
+service proximity is declared per project, so the package stays business-neutral. Full
+framework, config keys and the export/judge/ingest loop: **[GLOSSARY-TIERS.md](GLOSSARY-TIERS.md)**.
+
 ## Config-contract / override hooks (the rawification points)
 
 Everything project-specific is a `KEEL_CMS` key; every one degrades to a safe
@@ -124,6 +134,7 @@ no-op so `import keel_cms` works standalone.
 | `organization_node_hook` | minimal default | `(request) -> dict` publisher Organization |
 | `glossary_category_order` | `[]` → alphabetical | list of category labels |
 | `glossary_surface_labels` | `{}` → url is its own label | `{url: label}` |
+| `glossary_tiers` | `{}` → every term unjudged, no service categories | tier framework config — see [GLOSSARY-TIERS.md](GLOSSARY-TIERS.md) |
 | `KEEL_CMS_LANDING_MODEL` *(top-level setting)* | `"keel_seo.Landing"` | swappable money-page model for `TopicCluster.conversion_landing` |
 
 Extra keys read directly (not in the defaults set): `desk_market_aliases`,

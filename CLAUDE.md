@@ -30,6 +30,14 @@ Remaining and follow-up work for this project is tracked in [TODO.md](TODO.md), 
   belong to the sibling package **keel-content**, together with the component
   library that `keel_ui` fronts.
 
+## Glossary tiers
+
+The T1-T5 term-priority framework (`glossary_tiers.py` + the three `glossary_tier*`
+management commands) is documented in [GLOSSARY-TIERS.md](GLOSSARY-TIERS.md). Two rules
+when touching it: the tier table is fixed (a consumer that wants different weights changes
+its axes, not the table), and axis 2 never grows a keyword-API dependency — the judged
+verdict file is the contract.
+
 ## Editing rule (drift prevention)
 
 When a consuming project has this installed, its copy of these files is **not**
