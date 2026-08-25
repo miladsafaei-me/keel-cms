@@ -1164,6 +1164,28 @@ class ContentPlan(models.Model):
         "hidden from the default blog list until a scope expansion re-grades them. "
         "The per-level meaning is defined in the consumer's scope doc. NULL = ungraded.",
     )
+    # The ANSWERS that produced ``scope_relevance``, and the ruleset in force when
+    # they were given. Recording L4-L5 only pays off if a later scope widening can
+    # promote from that shelf, and a bare level cannot be re-derived once a
+    # definition moves — it has to be re-judged from scratch, which is slow, costly
+    # and non-deterministic. With the answers stored, a widening is a deterministic
+    # recompute (``keel_cms.scope_levels.derive_scope_level``) plus an audit trail.
+    scope_axes = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="The yes/no answer to each scope axis that produced "
+        "scope_relevance, e.g. {\"scope\": true, \"service\": true, "
+        "\"partnership\": false}. Axis names are the consumer's; the backbone axis "
+        "is required. NULL = the level was graded without recording its inputs.",
+    )
+    scope_ruleset = models.CharField(
+        max_length=64,
+        blank=True,
+        db_index=True,
+        help_text="Identifier of the scope definitions in force when scope_axes was "
+        "answered (e.g. a date or a version string). Rows carrying an older ruleset "
+        "are the ones a scope widening has to revisit.",
+    )
     source_type = models.CharField(max_length=20, choices=Source.choices, db_index=True)
     source_ref = models.CharField(
         max_length=500,
