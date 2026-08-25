@@ -49,8 +49,14 @@ Host configuration (all keys optional; defaults target ``keel_cms.Tag``)::
             "volume_true_bands": ["high", "medium"],
             "hub_threshold": "auto",             # or an int
             "verdicts_path": BASE_DIR / "data" / "glossary-tier-verdicts.json",
+            "noindex_tiers": ["T3", "T4", "T5"],  # hidden from search, still served
+            "gone_tiers": ["T4", "T5"],           # retired: host answers 410 and unlinks
         },
     }
+
+``noindex_tiers`` and ``gone_tiers`` are the two strengths of the same decision and are
+read through ``is_indexable_tier`` / ``is_gone_tier`` respectively; ``live_terms`` is the
+queryset every host listing filters through so a retired tier leaves the site at once.
 """
 from __future__ import annotations
 
@@ -100,6 +106,7 @@ DEFAULTS = {
     "hub_threshold": "auto",
     "verdicts_path": "",
     "noindex_tiers": [],
+    "gone_tiers": [],
     "require_verdict_on_save": False,
     "term_url_template": "",
 }
@@ -123,6 +130,7 @@ def config() -> dict:
     cfg["service_slugs"] = {str(s).strip() for s in cfg["service_slugs"] if str(s).strip()}
     cfg["volume_true_bands"] = {str(b).strip().lower() for b in cfg["volume_true_bands"]}
     cfg["noindex_tiers"] = {str(t).strip().upper() for t in cfg["noindex_tiers"] if str(t).strip()}
+    cfg["gone_tiers"] = {str(t).strip().upper() for t in cfg["gone_tiers"] if str(t).strip()}
     mode = str(cfg.get("proximity_mode") or "hybrid").strip().lower()
     cfg["proximity_mode"] = mode if mode in {"categories", "judged", "hybrid"} else "hybrid"
     return cfg
@@ -418,6 +426,46 @@ def is_indexable_tier(tier: str, cfg: dict | None = None) -> bool:
     """False when the host has declared this tier noindex. Unjudged (blank) stays indexable."""
     cfg = cfg or config()
     return str(tier or "").strip().upper() not in cfg["noindex_tiers"]
+
+
+def is_gone_tier(tier: str, cfg: dict | None = None) -> bool:
+    """True when the host has retired this tier's term pages entirely.
+
+    ``noindex_tiers`` hides a page from search while it keeps serving; ``gone_tiers`` is
+    the stronger statement that the page no longer exists, so the host answers ``410
+    Gone`` for it and stops linking it. A corpus that has outgrown its own long tail
+    needs the second one: a page nobody should land on is worse than no page, and a
+    tail of thin entries drags the whole glossary's quality signal down with it.
+
+    The two lists are independent. A host may declare only one, or set ``gone_tiers`` to
+    a superset of ``noindex_tiers`` once it decides the hidden tail is not worth keeping.
+    Unjudged (blank) tiers are never gone — a term the priority queue has not seen yet
+    must not be deleted by default.
+    """
+    cfg = cfg or config()
+    return str(tier or "").strip().upper() in cfg["gone_tiers"]
+
+
+def live_terms(queryset=None, cfg: dict | None = None):
+    """``queryset`` minus every term whose tier the host declared gone.
+
+    The one predicate every listing, link, count and search result on the host filters
+    through, so a retired tier disappears from the site in one place rather than in each
+    template that happens to enumerate terms. Pass a queryset to narrow it further (one
+    category, one experience level); omit it for the whole configured corpus.
+    """
+    cfg = cfg or config()
+    if queryset is None:
+        model = term_model(cfg)
+        queryset = model.objects.all()
+        flt = cfg.get("queryset_filter") or {}
+        valid_filter = {k: v for k, v in flt.items() if _has_field(model, k.split("__")[0])}
+        if valid_filter:
+            queryset = queryset.filter(**valid_filter)
+    gone = cfg["gone_tiers"]
+    if not gone:
+        return queryset
+    return queryset.exclude(relevancy_tier__in=sorted(gone))
 
 
 def term_url(term: Any, cfg: dict | None = None) -> str:

@@ -85,6 +85,8 @@ KEEL_CMS = {
 
         # Tiers whose term pages must not be indexed (empty = the package changes nothing).
         "noindex_tiers": ["T3", "T4", "T5"],
+        # Tiers whose term pages are retired outright: the host answers 410 and unlinks them.
+        "gone_tiers": ["T4", "T5"],
         # Refuse to save a NEW term that has no verdict yet.
         "require_verdict_on_save": True,
         # Only when the term route is not the one get_absolute_url() reverses.
@@ -207,6 +209,35 @@ so a later run cannot silently re-index what the bar just removed.
 Term pages must actually render the gate: `{% include "keel_seo/robots_meta.html" %}` in the
 term template's `<head>`. Without it the page carries no robots directive at all, and a
 de-indexed landing only removes it from the sitemap.
+
+## Retiring a tier outright
+
+`noindex_tiers` hides a page that keeps serving. `gone_tiers` is the stronger statement:
+those term pages no longer exist. A corpus that has outgrown its own long tail eventually
+needs it — a page nobody should land on is worse than no page, and a tail of thin entries
+drags the whole glossary's quality signal down with it.
+
+The package supplies the two predicates; the host owns the response and its templates:
+
+```python
+from keel_cms import glossary_tiers
+
+# In the term view — the page is gone, not hidden.
+if glossary_tiers.is_gone_tier(term.relevancy_tier):
+    return render(request, "…/term_gone.html", {...}, status=410)
+
+# Everywhere terms are listed, linked, counted or searched.
+terms = glossary_tiers.live_terms(Tag.objects.filter(is_term=True, parent_category=cat))
+```
+
+Route every listing through `live_terms` rather than filtering per template: a retired tier
+must leave the site in one place, or the pages stay reachable from whichever grid was
+missed. Keep the retired URLs in a sitemap while the removal is in flight — a 410 only
+counts once a crawler fetches it, and the sitemap is what brings the crawler back.
+
+The two lists are independent, and `gone_tiers` may be a superset of `noindex_tiers` once a
+host decides the hidden tail is not worth keeping. An unjudged (blank) tier is never gone:
+a term the priority queue has not seen yet must not be deleted by default.
 
 ## What re-judging costs
 
