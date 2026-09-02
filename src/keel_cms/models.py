@@ -30,6 +30,31 @@ from django.utils.html import strip_tags
 from .config import cms_setting, landing_model_ref
 
 
+#: Blocks whose text is machine data, never prose a reader consumes. ``strip_tags``
+#: removes the tags but keeps what is between them, so a component that ships its
+#: series or config inline counts as thousands of "words" of reading.
+_NON_PROSE_BLOCK_RE = re.compile(
+    r"<(script|style|template)\b[^>]*>.*?</\1\s*>", re.IGNORECASE | re.DOTALL
+)
+
+#: An article's own words are read at roughly this rate.
+_WORDS_PER_MINUTE = 200
+
+
+def read_time_minutes_for(content: str) -> int:
+    """Minutes to read ``content``, counting prose only.
+
+    In-article components embed their data as inline ``<script>`` (a chart's
+    candles, a calculator's config). That data is not prose, and counting it made
+    component-heavy articles advertise several times their real length — measured
+    at 29 minutes for a 1,074-word article whose chart carried 3,842 words of
+    inline series data.
+    """
+    prose = _NON_PROSE_BLOCK_RE.sub(" ", content or "")
+    words = len(re.findall(r"\S+", strip_tags(prose)))
+    return max(1, math.ceil(words / _WORDS_PER_MINUTE))
+
+
 class ContentScope(models.TextChoices):
     """Whether taxonomy (category/tag) applies to blog posts or news articles."""
 
@@ -821,13 +846,10 @@ class Post(models.Model):
         self.save(update_fields=["is_deleted", "deleted_at", "deleted_by"])
 
     def get_read_time_minutes(self):
-        """Calculate read time from content. Standard: ~200 words/min."""
+        """Calculate read time from content, ignoring inline component data."""
         if self.read_time_minutes and self.read_time_minutes > 0:
             return self.read_time_minutes
-        content = self.content_rendered or self.content_raw or ""
-        text = strip_tags(content)
-        words = len(re.findall(r"\S+", text))
-        return max(1, math.ceil(words / 200))
+        return read_time_minutes_for(self.content_rendered or self.content_raw or "")
 
     @property
     def content(self):
@@ -1568,10 +1590,7 @@ class NewsPost(models.Model):
     def get_read_time_minutes(self) -> int:
         if self.read_time_minutes and self.read_time_minutes > 0:
             return self.read_time_minutes
-        content = self.content_rendered or self.content_raw or ""
-        text = strip_tags(content)
-        words = len(re.findall(r"\S+", text))
-        return max(1, math.ceil(words / 200))
+        return read_time_minutes_for(self.content_rendered or self.content_raw or "")
 
     @property
     def content(self) -> str:
