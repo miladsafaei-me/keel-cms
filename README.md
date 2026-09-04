@@ -32,6 +32,8 @@ the platform model, and this repo's [`CLAUDE.md`](CLAUDE.md) for the contract.
   `visuals` specs through the **keel-ui** component library).
 - **Sidebar** — `sidebar_data` / `sidebar_cache` / `news_sidebar_*` + `signals`
   (cache invalidation + ContentPlan publish-state sync).
+- **YouTube embed gate** (`youtube_embed`) — whether a video may still be embedded
+  at all. See below.
 
 - **Design library** (`keel_cms/design_library/`) — project-neutral design
   catalogs (references, **not** runtime templates and not served). Ships the **Blog
@@ -119,6 +121,39 @@ term, and refuses an unjudged new term where the host asks it to. Search demand 
 agent judgement written to a git-tracked JSON file — no keyword tool, no API key — and
 service proximity is declared per project, so the package stays business-neutral. Full
 framework, config keys and the export/judge/ingest loop: **[GLOSSARY-TIERS.md](GLOSSARY-TIERS.md)**.
+
+## The YouTube embed gate (`youtube_embed`)
+
+A video's owner can disable embedding at any time, on a video we already
+published against. The `<iframe>` then stops playing and renders YouTube's own
+"Video unavailable / Watch on YouTube" box, and nothing on our side says so — the
+`status.embeddable` flag on the YouTube Data API is the only source of truth.
+
+`keel_cms.youtube_embed` is that check, and nothing more:
+
+```python
+from keel_cms.youtube_embed import is_embeddable, probe, status_for, validate_embeddable
+
+is_embeddable("https://www.youtube.com/watch?v=7wL2oyebbvU")   # False
+probe(["https://youtu.be/aaa...", "bbb..."], force=True)       # {id: EmbedStatus}, 50 ids/call
+validate_embeddable(url)                                       # raises ValidationError in a form
+```
+
+A verdict is `True`, `False`, or **`None` when we could not find out** (no API
+key, Google unreachable, quota spent). Unknown is never treated as blocked —
+`validate_embeddable` passes on it — so a missing key can never blank a video
+that is in fact fine. Verdicts are cached: a pass for a week, a block for a day,
+because a lifted block is the one we want to start honouring quickly.
+
+Configure the key as `KEEL_CMS["youtube_api_key"]` (YouTube Data API v3). With no
+key the whole gate is a pass-through. `PostForm.clean_youtube_url` already calls
+it, so a video that cannot play is refused in the editor rather than on the page.
+
+Two things the gate deliberately leaves to the host. **Policy** — clearing the
+URL, swapping in another video, or rendering a plain link is the host's call.
+And **scheduling** — a verdict is a snapshot of an owner's setting today, so a
+host that renders embeds needs its own periodic re-check of what it has already
+published.
 
 ## Config-contract / override hooks (the rawification points)
 

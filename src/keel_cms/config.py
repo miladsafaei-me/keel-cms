@@ -46,6 +46,13 @@ degrades to a safe no-op, so ``import keel_cms`` succeeds with no configuration)
         # Organization node derived from ``site_name`` + the request host.
         "organization_node_hook": "myapp.schema.organization_node",
 
+        # YouTube Data API v3 key, used only to ask whether a video its owner
+        # published may still be embedded (keel_cms.youtube_embed). A video
+        # whose owner disabled embedding renders as YouTube's "Video unavailable"
+        # box instead of playing, and the API is the only way to know. Blank ->
+        # every verdict is "unknown" and every gate built on it passes.
+        "youtube_api_key": "AIza...",
+
         # Fixed display order for glossary categories (a list of category labels).
         # Default: [] -> categories fall back to alphabetical order.
         "glossary_category_order": ["Signal Mechanics", "Risk & Performance Metrics"],
@@ -98,6 +105,9 @@ _DEFAULTS = {
     "glossary_category_order": [],
     "glossary_surface_labels": {},
     "glossary_visual_renderers": {},
+    # YouTube Data API v3 key for the embeddability check (youtube_embed.py).
+    # Blank -> every verdict is "unknown" and every gate on it passes.
+    "youtube_api_key": "",
     # Allowed values for ``Tag.term_type`` (host content). Default [] -> no
     # constraint (any string accepted; the gate treats an unset schema as pass).
     "glossary_term_types": [],

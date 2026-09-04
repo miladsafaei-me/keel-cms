@@ -17,6 +17,7 @@ from django import forms
 from django.utils.text import slugify
 
 from keel_cms.models import Author, Category, ContentScope, NewsPost, Post, Tag
+from keel_cms.youtube_embed import validate_embeddable
 
 logger = logging.getLogger(__name__)
 
@@ -364,6 +365,18 @@ class PostForm(_BaseContentForm):
             "meta_title": forms.TextInput(attrs={"class": "ta-input", "placeholder": "SEO title (optional)"}),
             "meta_description": forms.Textarea(attrs={"class": "ta-textarea", "placeholder": "SEO meta description (optional)", "rows": 3}),
         }
+
+    def clean_youtube_url(self):
+        """Refuse a video the page could not actually play.
+
+        A video whose owner disabled embedding, or one that has been deleted,
+        renders as YouTube's "Video unavailable" box rather than a player, so it
+        is caught here instead of on the published page. A verdict we cannot
+        reach (no API key, Google unreachable) passes.
+        """
+        url = (self.cleaned_data.get("youtube_url") or "").strip()
+        validate_embeddable(url)
+        return url
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -27,6 +27,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.html import strip_tags
 
+from . import youtube_embed
 from .config import cms_setting, landing_model_ref
 
 
@@ -587,11 +588,8 @@ class ActivePostManager(models.Manager):
 
 
 # watch?v=ID | youtu.be/ID | shorts/ID | embed/ID - the 11-char YouTube video id.
-# Kept local so the Post property has zero external dependency.
-_YOUTUBE_ID_RE = re.compile(
-    r"(?:youtube(?:-nocookie)?\.com/(?:watch\?(?:[^#\s]*&)?v=|embed/|shorts/)|youtu\.be/)"
-    r"([A-Za-z0-9_-]{11})"
-)
+# One definition, shared with the embeddability gate that parses the same URLs.
+_YOUTUBE_ID_RE = youtube_embed.YOUTUBE_ID_RE
 
 
 class Post(models.Model):
