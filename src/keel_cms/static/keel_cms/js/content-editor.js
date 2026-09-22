@@ -380,7 +380,7 @@
                 showTab(target); setBusy(false); switching = false;
             }).catch(function (err) {
                 setBusy(false); switching = false;
-                setStatus("Sync failed: " + (err && err.message ? err.message : "error") + " — staying on this tab.", true);
+                setStatus("Sync failed: " + (err && err.message ? err.message : "error") + ". Staying on this tab.", true);
             });
         }
 
@@ -621,7 +621,7 @@
                         if (prev) { prev.src = res.data.url; prev.alt = "Generated preview"; }
                         if (wrap) wrap.hidden = false;
                         if (btnIns) btnIns.disabled = false;
-                        if (st) st.textContent = "Done. Preview above — adjust caption if needed, then Insert.";
+                        if (st) st.textContent = "Done. Preview above: adjust caption if needed, then Insert.";
                     }
                 })
                 .catch(function () { if (st) st.textContent = "Network error."; })

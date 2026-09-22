@@ -428,7 +428,7 @@ class AuthorForm(forms.ModelForm):
     )
     is_reviewer = forms.TypedChoiceField(
         required=False,
-        choices=[(False, "No"), (True, "Yes — show in reviewer dropdown")],
+        choices=[(False, "No"), (True, "Yes, show in reviewer dropdown")],
         coerce=lambda x: str(x).lower() == "true",
         widget=forms.Select(attrs={"class": "ta-select"}),
         label="Eligible as reviewer",

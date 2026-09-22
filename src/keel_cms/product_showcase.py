@@ -146,8 +146,8 @@ def build_product_showcase(post) -> dict:
             "title": landing.title,
             "desc": cfg.get(
                 "conversion_desc",
-                "The tool readers of this guide most often start with — "
-                "see it in action and decide in minutes.",
+                "The tool readers of this guide most often start with. "
+                "See it in action and decide in minutes.",
             ),
             "cta": cfg.get("conversion_cta", "See how it works"),
             "primary": True,

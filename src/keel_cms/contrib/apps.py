@@ -15,7 +15,7 @@ class KeelCmsContribConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "keel_cms.contrib"
     label = "keel_cms_contrib"
-    verbose_name = "Keel CMS — public presentation (opt-in)"
+    verbose_name = "Keel CMS: public presentation (opt-in)"
 
     def ready(self):
         if getattr(settings, "KEEL_CMS_CONTRIB_ADMIN", False):
