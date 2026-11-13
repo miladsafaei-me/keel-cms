@@ -110,8 +110,10 @@ posts, news articles, and desk/topic/tag archives - regenerated on every request
    reverses `keel_cms:post_detail` / `keel_cms:news_post_detail` /
    `keel_cms:team_desk` / `keel_cms:topic_list` / `keel_cms:tag_detail`.
 2. Compose `SITEMAPS = {"landings": LandingSitemap, **content_sitemaps()}` and
-   hand it to Django's `sitemap` view. `all_sitemaps()` does the same composition
-   when keel-seo is installed.
+   mount it with `*directory_sitemap_urls(SITEMAPS)` from
+   `keel_seo.sitemap_directory` (not Django's flat `sitemap` view; it serves the
+   `/sitemap.xml` index plus one `/<segment>.xml` per routing directory).
+   `all_sitemaps()` does the same composition when keel-seo is installed.
 3. Add `django.contrib.sitemaps` to `INSTALLED_APPS` (it ships the `sitemap.xml`
    template) and ensure the Sites-framework `Site.domain` is the real domain (the
    sitemap builds absolute URLs from it).
